@@ -2,8 +2,11 @@
   "name": "com.longwa.aishadergraph",
   "version": "1.0.0",
   "displayName": "AI Shader Graph",
-  "description": "AI 驱动的 Shader Graph 自动生成工具 - 解析 AI 返回的 JSON 自动构建 Unity ShaderGraph 资产，支持 URP / Built-In 管线",
+  "description": "AI 驱动的 Shader Graph 自动生成工具 - 解析 AI 返回的 JSON 自动构建 Unity ShaderGraph 资产",
   "unity": "6000.0",
+  "documentationUrl": "https://github.com/1ongwa2021/AIshaderGraph",
+  "changelogUrl": "https://github.com/1ongwa2021/AIshaderGraph/releases",
+  "licensesUrl": "https://github.com/1ongwa2021/AIshaderGraph/blob/main/LICENSE.md",
   "keywords": ["shadergraph", "ai", "generator", "urp", "editor-tools"],
   "license": "Unity Companion License",
   "author": {
