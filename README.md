@@ -48,11 +48,29 @@ https://github.com/1ongwa2021/AIshaderGraph.git
 
 ## 快速开始
 
-1. Unity 菜单 → **Tools > 龙哥的秘密花园 > AI ShaderGraph 生成器**
-2. 选择目标目录（或在 Project 窗口中选中文件夹后点击"使用 Project 窗口中选中的目录"）
-3. 将 AI 返回的 JSON 粘贴到文本框中
-4. 点击 **生成 ShaderGraph**
-5. 生成的 `.shadergraph` 资产自动出现在目标目录，并在检视面板中选中
+### 1. 打开生成器
+Tools > 龙哥的秘密花园 > AI ShaderGraph 生成器
+![开始界面](快速开始/开始界面.png)
+
+### 2. 获取知识库内容
+拿去知识库文档，提供给 AI 作为参考
+![拿去知识库](快速开始/拿去知识库.png)
+![知识库文档](快速开始/知识库文档.png)
+
+### 3. 让 AI 生成 JSON
+把知识库 + 你想要的 shader 效果描述发送给 AI，复制它返回的 JSON
+![发送给任意AI](快速开始/发送给任意AI.png)
+![提供需要的效果让AI生成对应的Json复制它](快速开始/提供需要的效果让AI生成对应的Json复制它.png)
+
+### 4. 粘贴 JSON 并生成
+粘贴 JSON → 选择目标目录 → 点击生成
+![粘贴到生成器内点击生成](快速开始/粘贴到生成器内点击生成.png)
+![生成位置和生成shader](快速开始/生成位置和生成shader.png)
+
+### 5. 验证 ShaderGraph
+双击生成的 .shadergraph 资产，检查节点是否正确
+![可进去查看shadergraph节点是否正确](快速开始/可进去查看shadergraph节点是否正确.png)
+
 
 ### JSON 格式示例
 
