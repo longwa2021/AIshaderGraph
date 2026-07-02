@@ -6,6 +6,8 @@ using UnityEngine;
 using 龙哥的秘密花园.节点库;
 using 龙哥的秘密花园.ShaderGraphBuilder;
 
+using UnityObject = UnityEngine.Object;
+
 namespace 龙哥的秘密花园.Editor
 {
     /// <summary>
@@ -55,7 +57,7 @@ namespace 龙哥的秘密花园.Editor
                     }
                     else
                     {
-                        EditorUtility.DisplayDialog("错误", "请选择 Assets 目录内的文件夹", "确定");
+                        SafeDisplayDialog("错误", "请选择 Assets 目录内的文件夹", "确定");
                     }
                 }
                 GUI.FocusControl(null);
@@ -82,7 +84,7 @@ namespace 龙哥的秘密花园.Editor
                 }
                 else
                 {
-                    EditorUtility.DisplayDialog("提示", "请先在 Project 窗口中选择一个目录或文件", "确定");
+                    SafeDisplayDialog("提示", "请先在 Project 窗口中选择一个目录或文件", "确定");
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -129,7 +131,7 @@ namespace 龙哥的秘密花园.Editor
         {
             if (string.IsNullOrEmpty(m_JsonInput))
             {
-                EditorUtility.DisplayDialog("错误", "JSON 字符串不能为空", "确定");
+                SafeDisplayDialog("错误", "JSON 字符串不能为空", "确定");
                 return;
             }
 
@@ -140,7 +142,7 @@ namespace 龙哥的秘密花园.Editor
                 string folderName = Path.GetFileName(m_TargetDirectory);
                 if (!AssetDatabase.IsValidFolder(parent))
                 {
-                    EditorUtility.DisplayDialog("错误", $"目录无效: {m_TargetDirectory}", "确定");
+                    SafeDisplayDialog("错误", $"目录无效: {m_TargetDirectory}", "确定");
                     return;
                 }
                 AssetDatabase.CreateFolder(parent, folderName);
@@ -184,7 +186,7 @@ namespace 龙哥的秘密花园.Editor
                     case "SpriteUnlit": setupAction = ctx => ctx.URP.SetupAsURPSpriteUnlit(); break;
                     case "SpriteCustomLit": setupAction = ctx => ctx.URP.SetupAsURPSpriteCustomLit(); break;
                     default:
-                        EditorUtility.DisplayDialog("错误", $"不支持的 URP Target: {target}", "确定");
+                        SafeDisplayDialog("错误", $"不支持的 URP Target: {target}", "确定");
                         isValid = false;
                         break;
                 }
@@ -197,14 +199,14 @@ namespace 龙哥的秘密花园.Editor
                     case "Unlit": setupAction = ctx => ctx.BuiltIn.SetupAsBuiltInUnlit(); break;
                     case "Canvas": setupAction = ctx => ctx.BuiltIn.SetupAsBuiltInCanvas(); break;
                     default:
-                        EditorUtility.DisplayDialog("错误", $"不支持的 BuiltIn Target: {target}", "确定");
+                        SafeDisplayDialog("错误", $"不支持的 BuiltIn Target: {target}", "确定");
                         isValid = false;
                         break;
                 }
             }
             else
             {
-                EditorUtility.DisplayDialog("错误", $"不支持的管线: {pipeline}", "确定");
+                SafeDisplayDialog("错误", $"不支持的管线: {pipeline}", "确定");
                 isValid = false;
             }
 
@@ -221,7 +223,7 @@ namespace 龙哥的秘密花园.Editor
             }
             catch (Exception ex)
             {
-                EditorUtility.DisplayDialog("生成失败", $"创建 ShaderGraph 时发生错误:\n{ex.Message}", "确定");
+                SafeDisplayDialog("生成失败", $"创建 ShaderGraph 时发生错误:\n{ex.Message}", "确定");
                 Debug.LogError(ex);
                 return;
             }
@@ -233,11 +235,11 @@ namespace 龙哥的秘密花园.Editor
             {
                 Selection.activeObject = newAsset;
                 EditorGUIUtility.PingObject(newAsset);
-                EditorUtility.DisplayDialog("成功", $"ShaderGraph 已生成:\n{assetPath}", "确定");
+                SafeDisplayDialog("成功", $"ShaderGraph 已生成:\n{assetPath}", "确定");
             }
             else
             {
-                EditorUtility.DisplayDialog("警告", $"文件已创建但无法加载，请手动刷新:\n{assetPath}", "确定");
+                SafeDisplayDialog("警告", $"文件已创建但无法加载，请手动刷新:\n{assetPath}", "确定");
             }
         }
 
@@ -269,6 +271,14 @@ namespace 龙哥的秘密花园.Editor
             }
 
             ctx.Save();
+        }
+
+        private static void SafeDisplayDialog(string title, string message, string ok)
+        {
+            EditorApplication.delayCall += () =>
+            {
+                EditorUtility.DisplayDialog(title, message, ok);
+            };
         }
     }
 }
