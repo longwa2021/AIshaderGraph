@@ -1,14 +1,12 @@
 {
-    "name": "DeepSeekChat",
+    "name": "com.longwa.aishadergraph.Editor",
     "rootNamespace": "UnityEditor.ShaderGraph",
     "references": [
         "Unity.ShaderGraph.Editor",
         "Unity.RenderPipelines.Universal.Editor",
         "Unity.EditorCoroutines.Editor"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
