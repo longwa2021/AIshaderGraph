@@ -8,7 +8,7 @@
   "changelogUrl": "https://github.com/longwa2021/AIshaderGraph/releases",
   "licensesUrl": "https://github.com/longwa2021/AIshaderGraph/blob/main/LICENSE.md",
   "keywords": ["shadergraph", "ai", "generator", "urp", "editor-tools"],
-  "license": "Unity Companion License",
+  "license": "MIT",
   "author": {
     "name": "longwa2021",
     "email": "fang474529110@163.com",
