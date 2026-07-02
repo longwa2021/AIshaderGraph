@@ -1,0 +1,11 @@
+{
+  "name": "com.longwa.aishadergraph",
+  "version": "1.0.0",
+  "displayName": "AI Shader Graph",
+  "description": "AI驱动的Shader Graph自定义Package",
+  "unity": "6000.0",
+  "author": {
+    "name": "longwa2021",
+    "email": "fang474529110@163.com"
+  }
+}
