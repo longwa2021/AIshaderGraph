@@ -1,0 +1,1186 @@
+# ShaderGraph 节点参考
+
+## 约束
+- 节点类型必须来自下表。
+- 槽名称必须与表内一致（大小写敏感）。
+- 输出 JSON 时仅使用这些预定义名称，不要使用数字 ID。
+- 槽路径格式：`节点类型.输入输出类型.槽名称`（如 `AddNode.Input.A`）。
+
+## 管线与块
+- **Pipeline URP** 可选 Target：`Unlit`, `Lit`, `Fullscreen`, `Canvas`, `SixWay`, `Decal`, `SpriteLit`, `SpriteUnlit`, `SpriteCustomLit`
+- **Pipeline BuiltIn** 可选 Target：`Unlit`, `Lit`, `Canvas`
+- **Vertex Context 块**：`Position`, `Normal`, `Tangent`
+- **Fragment Context 块**：`BaseColor`, `NormalTS`, `NormalOS`, `NormalWS`, `Metallic`, `Specular`, `Smoothness`, `Occlusion`, `Emission`, `Alpha`, `AlphaClipThreshold`, `CoatMask`, `CoatSmoothness`, `MapRightTopBack`, `MapLeftBottomFront`, `AbsorptionStrength`, `SpriteMask`
+## Fragment Context 块可用性说明
+
+不同 URP Target 下允许使用的 Fragment 块不同，且部分块受 **Surface Options** 开关控制。下方列出各 Target 的完整支持块集：
+
+- **粗体** 表示创建时默认激活的块。
+- *斜体* 表示需满足条件才会显示（如开启 Alpha Clipping、启用特定功能）。
+- 未列出的块在该 Target 下**不可用**（即无法在 Master Stack 中添加）。
+
+### URP Unlit Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 后显示 |
+
+> **注意**：Unlit 目标**不包含** `Alpha` 块（即使开启 Alpha Clipping 也不会显示），因为 Unlit 不向渲染管线输出 Alpha 通道。
+
+### URP Lit Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **NormalTS** / **NormalOS** / **NormalWS** | 默认激活 `NormalTS`，其余可通过 “Fragment Normal Space” 切换 |
+| **Metallic** (或 **Specular**) | 根据 Workflow Mode 默认激活其一；若开启 Material Override 则两者均显示 |
+| **Smoothness** | 默认激活 |
+| **Emission** | 默认激活 |
+| **Occlusion** | 默认激活 |
+| *Alpha* | 表面类型为 Transparent 或开启 Alpha Clipping 时显示（受 Material Override 影响） |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 时显示（受 Material Override 影响） |
+| *CoatMask* | 勾选 “Clear Coat” 后显示 |
+| *CoatSmoothness* | 勾选 “Clear Coat” 后显示 |
+
+### URP Fullscreen Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **Alpha** | 默认激活 |
+
+### URP Canvas Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **Emission** | 默认激活 |
+| **Alpha** | 默认激活 |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 后显示 |
+
+### URP SixWay Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **MapRightTopBack** | 默认激活 |
+| **MapLeftBottomFront** | 默认激活 |
+| *AbsorptionStrength* | 勾选 “Use Color Absorption” 或开启 Material Override 后显示 |
+| **Emission** | 默认激活 |
+| **Occlusion** | 默认激活 |
+| *Alpha* | 表面类型为 Transparent 或开启 Alpha Clipping 时显示（受 Material Override 影响） |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 时显示（受 Material Override 影响） |
+
+### URP Decal Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 需在 SubTarget 面板中勾选 “Affect BaseColor” |
+| **NormalTS** | 需勾选 “Affect Normal” |
+| *NormalAlpha* (内部块) | 勾选 “Affect Normal” 且勾选 “Blend” 时启用 |
+| **Metallic** | 需勾选 “Affect MAOS” |
+| **Occlusion** | 需勾选 “Affect MAOS” |
+| **Smoothness** | 需勾选 “Affect MAOS” |
+| *MAOSAlpha* (内部块) | 勾选 “Affect MAOS” 时启用 |
+| **Emission** | 需勾选 “Affect Emission” |
+| **Alpha** | 勾选 “Affect BaseColor” 或 “Affect Emission” 时显示 |
+
+### URP Sprite Lit / Sprite Unlit / Sprite CustomLit Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **NormalTS** | 仅 `SpriteLit` 和 `SpriteCustomLit` 默认激活 |
+| **Emission** | 默认激活（`SpriteUnlit` 除外） |
+| **Alpha** | 默认激活 |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 时显示 |
+| **SpriteMask** | 所有 Sprite 目标均可用（默认不激活，需手动添加） |
+
+---
+## Built-in Pipeline Fragment Context 块可用性说明
+
+Built‑in 管线支持以下 Target：`Lit`, `Unlit`, `Canvas`。各 Target 允许的 Fragment 块不同，且受 Surface Options 影响。
+
+### Built‑in Lit Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **NormalTS** / **NormalOS** / **NormalWS** | 默认激活 `NormalTS`，可通过 “Fragment Normal Space” 切换 |
+| **Metallic** | 默认激活（Workflow 固定为 Metallic，Specular 暂不支持） |
+| **Smoothness** | 默认激活 |
+| **Emission** | 默认激活 |
+| **Occlusion** | 默认激活 |
+| *Alpha* | 表面类型为 Transparent 或开启 Alpha Clipping 时显示（受 Material Override 影响） |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 时显示（受 Material Override 影响） |
+
+> **注意**：Built‑in Lit 当前不支持 Specular 工作流，且 `CoatMask` / `CoatSmoothness` 不可用。
+
+### Built‑in Unlit Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| *Alpha* | 表面类型为 Transparent 或开启 Alpha Clipping 时显示（受 Material Override 影响） |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 时显示（受 Material Override 影响） |
+
+> **注意**：Built‑in Unlit 不包含 `Emission` 块，且 `Alpha` 块仅在特定条件下出现（同 URP Unlit 行为）。
+
+### Built‑in Canvas Target
+| 可用块 | 激活条件 |
+|--------|----------|
+| **BaseColor** | 默认激活 |
+| **Emission** | 默认激活 |
+| **Alpha** | 默认激活 |
+| *AlphaClipThreshold* | 开启 Alpha Clipping 后显示 |
+
+> **说明**：Canvas Target 专用于 UI 着色器，渲染状态（如 Blend、Cull、Stencil）由 UI 系统统一控制，无需额外块。
+
+## 条件性块触发规则（Built‑in 通用）
+
+- **Alpha** 与 **AlphaClipThreshold**  
+  受 `Surface Options` 中的 `Surface Type`（Opaque/Transparent）和 `Alpha Clipping` 开关控制。若开启 `Allow Material Override`，这两个块将始终显示并由材质属性驱动。
+
+- **Material Override**  
+  在 Lit/Unlit Target 属性面板中，若勾选 `Allow Material Override`，则原本受目标固定设置控制的块（如 `Alpha`、`Metallic`）会全部显示，并依赖材质属性动态启用。
+
+- **Normal 空间切换（仅 Lit）**  
+  可通过 `Fragment Normal Space` 下拉菜单在 `Tangent` / `Object` / `World` 之间切换，对应的 `NormalTS`、`NormalOS`、`NormalWS` 块会互斥显示。
+
+## 条件性块触发规则（通用）
+
+- **Alpha** 与 **AlphaClipThreshold**  
+  是否可用取决于 `Surface Options` 中的 **Surface Type**（Opaque/Transparent）和 **Alpha Clipping** 开关。在 Lit/Unlit/SixWay 目标中，若开启 `Allow Material Override`，这两个块将始终显示（由材质控制）。
+
+- **Material Override**  
+  在 Lit/Unlit/SixWay Target 的属性面板中，若勾选 `Allow Material Override`，则原本受目标固定设置控制的块（如 `Alpha`、`Metallic`/`Specular`）将全部显示，并依赖材质属性动态启用。
+
+- **Decal 块的可见性**  
+  完全由 SubTarget 面板中的功能开关（Affect BaseColor、Affect Normal 等）决定，与 Master Stack 编辑无关。
+## 节点类型、插槽与功能说明
+| 节点类型 | 输入槽 | 输出槽 | 功能说明 |
+|---------|-------|--------|----------|
+| ColorNode | 无 | Out | 输出一个常量颜色值 |
+| BooleanNode | 无 | Out | 输出一个布尔值（True/False） |
+| ConstantNode | 无 | Out | 输出数学常量（如 PI、E） |
+| IntegerNode | 无 | Out | 输出一个整数值 |
+| SliderNode | 无 | Out | 输出一个带范围限制的浮点数 |
+| TimeNode | 无 | Time, SineTime, CosineTime, DeltaTime, SmoothDelta | 输出时间相关值（时间、正弦时间、帧间隔等） |
+| Vector1Node | X | Out | 输出一个一维浮点数，可接收输入或设为常量 |
+| Vector2Node | X, Y | Out | 输出一个二维向量，X、Y 可分别设置 |
+| Vector3Node | X, Y, Z | Out | 输出一个三维向量 |
+| Vector4Node | X, Y, Z, W | Out | 输出一个四维向量 |
+| InstanceIDNode | 无 | Out | 输出当前渲染实例的唯一 ID |
+| NormalVectorNode | 无 | Out | 输出顶点/像素的法线方向（支持选择坐标空间：Object, View, World, Tangent） |
+| PositionNode | 无 | Out | 输出顶点/像素的位置坐标（支持选择坐标空间：Object, View, World, Tangent, AbsoluteWorld） |
+| ScreenPositionNode | 无 | Out | 输出屏幕空间坐标 |
+| TangentVectorNode | 无 | Out | 输出顶点/像素的切线方向（支持选择坐标空间：Object, View, World, Tangent） |
+| UVNode | 无 | Out | 输出纹理坐标（UV0~UV3） |
+| VertexColorNode | 无 | Out | 输出顶点颜色 |
+| VertexIDNode | 无 | Out | 输出顶点索引 |
+| ViewDirectionNode | 无 | Out | 输出从表面指向相机的方向（支持选择坐标空间：Object, View, World, Tangent） |
+| ViewVectorNode | 无 | Out | 输出从相机到表面的方向（支持选择坐标空间：Object, View, World, Tangent） |
+| BitangentVectorNode | 无 | Out | 输出副切线方向（支持选择坐标空间：Object, View, World, Tangent） |
+| BlackbodyNode | X | Out | 根据温度输出黑体辐射颜色 |
+| GradientNode | 无 | Out | 定义一个渐变资源对象 |
+| SampleGradientNode | Gradient, Time | Out | 根据时间从渐变中采样颜色 |
+| AmbientNode | 无 | Color_Sky, Equator, Ground | 输出环境光照颜色（天空/赤道/地面） |
+| BakedGINode | NormalWS, PositionWS, StaticUV, DynamicUV | Out | 输出烘焙的全局光照 |
+| MainLightDirectionNode | 无 | Direction | 输出主光源方向 |
+| ReflectionProbeNode | ViewDir, Normal, LOD | Direction | 采样反射探针 |
+| Matrix2Node | 无 | Out | 输出一个常量矩阵 |
+| Matrix3Node | 无 | Out | 输出一个常量矩阵 |
+| Matrix4Node | 无 | Out | 输出一个常量矩阵 |
+| TransformationMatrixNode | 无 | Out | 输出常用变换矩阵（如 Model、View、Projection） |
+| DielectricSpecularNode | 无 | Out | 计算电介质材质的反射率 |
+| MetalReflectanceNode | 无 | Out | 根据金属类型输出反射率 |
+| CameraNode | 无 | Position, Direction, Orthographic, NearPlane, FarPlane, ZBufferSign, Width, Height | 输出相机位置、方向、远近平面等属性 |
+| EyeIndexNode | 无 | Out | 输出 VR 眼索引（0 或 1） |
+| FogNode | Position | Color, Density | 输出雾的颜色和密度 |
+| ObjectNode | 无 | Position, Scale, WorldBoundsMin, WorldBoundsMax, BoundsSize | 输出物体变换属性（位置、缩放、包围盒） |
+| SceneColorNode | UV | Out | 采样场景颜色 |
+| SceneDepthDifferenceNode | SceneUV, PositionWS | Out | 计算深度差异 |
+| SceneDepthNode | UV | Out | 采样场景深度 |
+| ScreenNode | 无 | Width, Height | 输出屏幕宽度和高度 |
+| SampleTexture2DNode | UV, Texture, Sampler | RGBA, R, G, B, A | 采样 2D 纹理，返回 RGBA 及各通道 |
+| SampleTexture2DLODNode | UV, Texture, Sampler, LOD | RGBA, R, G, B, A | 带 LOD 级别的 2D 纹理采样 |
+| SampleTexture2DArrayNode | UV, Texture, Sampler, Index | RGBA, R, G, B, A | 采样 2D 纹理数组 |
+| SampleTexture3DNode | UV, Texture, Sampler | RGBA, R, G, B, A | 采样 3D 纹理 |
+| SampleVirtualTextureNode | UV, VT | Out, Out2, Out3, Out4 | 采样虚拟纹理 |
+| SamplerStateNode | 无 | Out | 定义纹理采样器状态（过滤、循环模式等） |
+| CalculateLevelOfDetailTexture2DNode | Texture, UV, Sampler | LOD | 计算纹理 LOD 级别 |
+| Texture2DAssetNode | 无 | Out | 引用一个 2D 纹理资产 |
+| Texture2DArrayAssetNode | 无 | Out | 引用一个 2D 纹理数组资产 |
+| Texture3DAssetNode | 无 | Out | 引用一个 3D 纹理资产 |
+| CubemapAssetNode | 无 | Out | 引用一个立方体贴图资产 |
+| SampleCubemapNode | Cube, ViewDir, Normal, Sampler, LOD | Out | 采样立方体贴图 |
+| SampleRawCubemapNode | Cube, Dir, Sampler, LOD | Out | 采样原始立方体贴图（不进行内部转换） |
+| GatherTexture2DNode | Texture, UV, Sampler, Offset | RGBA, R, G, B, A | 执行纹理 Gather 操作 |
+| TexelSizeNode | Texture | Width, Height, TexelWidth, TexelHeight | 输出纹理的纹素尺寸和分辨率 |
+| CustomInterpolatorNode | 无 | Out | 自定义顶点到片元的插值数据 |
+| AddNode | A, B | Out | 加法 A + B |
+| PropertyNode | 无 | Out | 引用黑板中定义的属性（颜色、纹理、浮点等） |
+| ChannelMixerNode | In | Out | 通道混合，调整颜色平衡 |
+| ContrastNode | In, Contrast | Out | 调整对比度 |
+| HueNode | In, Offset | Out | 调整色相 |
+| InvertColorsNode | In | Out | 颜色反转 |
+| ReplaceColorNode | In, From, To, Range, Fuzziness | Out | 替换指定颜色 |
+| SaturationNode | In, Saturation | Out | 调整饱和度 |
+| WhiteBalanceNode | In, Temperature, Tint | Out | 白平衡调整（色温/色调） |
+| BlendNode | Base, Blend, Opacity | Out | 多种混合模式（叠加、柔光、正片叠底等） |
+| DitherNode | In, ScreenPosition | Out | 抖动节点 |
+| FadeTransitionNode | NoiseValue, FadeValue, FadeContrast | Fade | 淡入淡出过渡节点 |
+| ChannelMaskNode | In | Out | 通道遮罩，选择性地输出通道 |
+| ColorMaskNode | In, MaskColor, Range, Fuzziness | Out | 根据颜色范围生成遮罩 |
+| NormalBlendNode | A, B | Out | 混合两个法线贴图 |
+| NormalFromHeightNode | In, Strength | Out | 从高度图生成法线 |
+| NormalFromTextureNode | Texture, UV, Sampler, Offset, Strength | Out | 从纹理采样并生成法线 |
+| NormalReconstructZNode | In | Out | 从 XY 重建 Z 分量得到完整法线 |
+| NormalStrengthNode | In, Strength | Out | 调整法线强度 |
+| NormalUnpackNode | In | Out | 解压压缩的法线贴图 |
+| ColorspaceConversionNode | In | Out | RGB/Linear/HSV 颜色空间转换 |
+| CombineNode | R, G, B, A | RGBA, RGB, RG | 将分量合并为向量 |
+| FlipNode | In | Out | 翻转向量的分量 |
+| SplitNode | In | R, G, B, A | 拆分向量为各个分量（R,G,B,A） |
+| SwizzleNode | In | Out | 重新排列向量分量 |
+| AbsoluteNode | In | Out | 绝对值 |
+| ExponentialNode | In | Out | 指数函数（e^x 或 2^x） |
+| LengthNode | In | Out | 向量长度 |
+| LogNode | In | Out | 对数函数 |
+| ModuloNode | A, B | Out | 取模运算 |
+| NegateNode | In | Out | 取反 |
+| NormalizeNode | In | Out | 向量归一化 |
+| PosterizeNode | In, Steps | Out | 色调分离 |
+| ReciprocalNode | In | Out | 倒数（1/x） |
+| ReciprocalSquareRootNode | In | Out | 平方根倒数（1/sqrt(x)） |
+| DivideNode | A, B | Out | 除法 A ÷ B |
+| MultiplyNode | A, B | Out | 乘法 A × B |
+| PowerNode | A, B | Out | 幂运算 A^B |
+| SquareRootNode | In | Out | 平方根 |
+| SubtractNode | A, B | Out | 减法 A - B |
+| DDXNode | In | Out | 屏幕空间 X 方向偏导数 |
+| DDXYNode | In | Out | 屏幕空间 X 和 Y 方向偏导数的绝对值之和 |
+| DDYNode | In | Out | 屏幕空间 Y 方向偏导数 |
+| InverseLerpNode | A, B, T | Out | 逆向线性插值 |
+| LerpNode | A, B, T | Out | 线性插值 |
+| SmoothstepNode | Edge1, Edge2, In | Out | 平滑步进插值 |
+| MatrixConstructionNode | M0, M1, M2, M3 | M4x4, M3x3, M2x2 | 从行或列构造矩阵 |
+| MatrixDeterminantNode | In | Out | 矩阵行列式 |
+| MatrixSplitNode | In | M0, M1, M2, M3 | 矩阵拆分为行或列向量 |
+| MatrixTransposeNode | In | Out | 矩阵转置 |
+| ClampNode | In, Min, Max | Out | 钳位到指定范围 |
+| FractionNode | In | Out | 取小数部分 |
+| MaximumNode | A, B | Out | 最大值 |
+| MinimumNode | A, B | Out | 最小值 |
+| OneMinusNode | In | Out | 1 - 输入值 |
+| RandomRangeNode | Seed, Min, Max | Out | 随机范围 |
+| RemapNode | In, InMinMax, OutMinMax | Out | 将输入从一个范围映射到另一个范围 |
+| SaturateNode | In | Out | 钳位到 [0,1] |
+| CeilingNode | In | Out | 向上取整 |
+| FloorNode | In | Out | 向下取整 |
+| RoundNode | In | Out | 四舍五入 |
+| SignNode | In | Out | 返回符号（-1,0,1） |
+| StepNode | Edge, In | Out | 阶跃函数（大于边缘返回 1，否则 0） |
+| TruncateNode | In | Out | 向零取整 |
+| SineNode | In | Out | 正弦 |
+| TangentNode | In | Out | 正切 |
+| ArccosineNode | In | Out | 反余弦 |
+| ArcsineNode | In | Out | 反正弦 |
+| Arctangent2Node | A, B | Out | 反正切2（atan2） |
+| ArctangentNode | In | Out | 反正切 |
+| CosineNode | In | Out | 余弦 |
+| DegreesToRadiansNode | In | Out | 度数转弧度 |
+| HyperbolicCosineNode | In | Out | 双曲余弦 |
+| HyperbolicSineNode | In | Out | 双曲正弦 |
+| HyperbolicTangentNode | In | Out | 双曲正切 |
+| RadiansToDegreesNode | In | Out | 弧度转度数 |
+| CrossProductNode | A, B | Out | 叉积 |
+| DistanceNode | A, B | Out | 两点距离 |
+| DotProductNode | A, B | Out | 点积 |
+| FresnelEffectNode | Normal, ViewDir, Power | Out | 菲涅尔效应 |
+| ProjectionNode | A, B | Out | 向量 A 投影到向量 B |
+| ReflectionNode | In, Normal | Out | 计算反射方向 |
+| RefractNode | Incident, Normal, IORSource, IORMedium | Refracted, Intensity | 计算折射方向 |
+| RejectionNode | A, B | Out | 向量 A 垂直于 B 的分量 |
+| RotateAboutAxisNode | In, Axis, Rotation | Out | 绕轴旋转 |
+| SphereMaskNode | Coords, Center, Radius, Hardness | Out | 球体遮罩 |
+| TransformNode | In | Out | 在不同坐标空间之间转换向量 |
+| NoiseSineWaveNode | In, MinMax | Out | 噪声正弦波 |
+| SawtoothWaveNode | In | Out | 锯齿波 |
+| SquareWaveNode | In | Out | 方波 |
+| TriangleWaveNode | In | Out | 三角波 |
+| ComputeDeformNode | 无 | DeformedPosition, DeformedNormal, DeformedTangent | 计算变形（用于顶点动画） |
+| LinearBlendSkinningNode | VertexPosition, VertexNormal, VertexTangent | SkinnedPosition, kinnedNormal, kinnedTangent | 线性蒙皮（骨骼动画） |
+| GradientNoiseNode | UV, Scale | Out | 生成梯度噪声（Perlin 风格） |
+| SimpleNoiseNode | UV, Scale | Out | 生成简单 Value 噪声 |
+| VoronoiNode | UV, AngleOffset, CellDensity | Out, Cells | 生成 Voronoi 噪声，可输出距离和细胞颜色 |
+| EllipseNode | UV, Width, Height | Out | 生成椭圆形状遮罩 |
+| PolygonNode | Sides, UV, Width, Height | Out | 生成正多边形形状遮罩 |
+| RectangleNode | UV, Width, Height | Out | 生成矩形形状遮罩 |
+| RoundedPolygonNode | UV, Width, Height, Sides, Roundness | Out | 生成带圆角的多边形 |
+| RoundedRectangleNode | UV, Width, Height, Radius | Out | 生成带圆角的矩形 |
+| CheckerboardNode | UV, ColorA, ColorB, Frequency | Out | 生成棋盘格图案 |
+| OrNode | A, B | Out | 逻辑或 |
+| AllNode | In | Out | 向量分量全真判断 |
+| AndNode | A, B | Out | 逻辑与 |
+| AnyNode | In | Out | 向量分量任一真判断 |
+| BranchNode | Predicate, True, False | Out | 根据条件选择输出 |
+| BranchOnInputConnectionNode | input, Connected, NotConnected | Out | 根据输入是否连接选择输出 |
+| ComparisonNode | A, B | Out | 比较 A 和 B（等于、大于等） |
+| IsFrontFaceNode | 无 | Out | 判断当前片元是否面向相机 |
+| IsInfiniteNode | In | Out | 检测无穷大 |
+| IsNanNode | In | Out | 检测 NaN |
+| NandNode | A, B | Out | 逻辑与非 |
+| NotNode | In | Out | 逻辑非 |
+| ParallaxMappingNode | Heightmap, HeightmapSampler, Amplitude, UVs | ParallaxUVs | 视差映射，模拟深度 |
+| ParallaxOcclusionMappingNode | Heightmap, HeightmapSampler, Amplitude, Steps, UVs, LOD, LODThreshold, Tiling, Offset, PrimitiveSize | PixelDepthOffset, ParallaxUVs | 视差遮挡映射（更精确的深度模拟） |
+| PolarCoordinatesNode | UV, Center, RadialScale, LengthScale | Out | 转换为极坐标 |
+| RadialShearNode | UV, Center, Strength, Offset | Out | 径向剪切 UV 扭曲 |
+| RotateNode | UV, Center, Rotation | Out | 旋转 UV |
+| SpherizeNode | UV, Center, Strength, Offset | Out | 球面化 UV 扭曲 |
+| TilingAndOffsetNode | UV, Tiling, Offset | Out | UV 平铺和偏移 |
+| TriplanarNode | Texture, Sampler, Position, Normal, Tile, Blend | Out | 三平面映射，用于无 UV 的纹理投射 |
+| TwirlNode | UV, Center, Strength, Offset | Out | 漩涡扭曲 UV |
+| FlipbookNode | UV, Width, Height, Tile | Out | 序列帧动画 UV |
+| DropdownNode | 无 | Out | 下拉列表选择，输出索引值 |
+| KeywordNode | On, Off | Out | 根据 Shader Keyword 状态选择输出 |
+| CustomFunctionNode | (动态) | (动态) | 自定义 HLSL 函数节点 |
+| PreviewNode | In | Out | 预览节点（透传） |
+| SplitTextureTransformNode | In | Tiling, Offset, TextureOnly | 拆分纹理变换为平铺和偏移 |
+| LightTextureNode | 无 | Out | 输出 2D 光照纹理，常用于 URP 2D 光照系统 |
+| MeterValueNode | 无 | Value | 输出 UGUI Meter 组件的当前值（0~1 浮点数） |
+| RangeBarValueNode | 无 | Min, Max, Direction | 输出 UGUI RangeBar 组件的最小值、最大值及方向向量 |
+| RectTransformSizeNode | 无 | Size, ScaleFactor, PixelPerUnit | 输出 UI 元素的 RectTransform 尺寸、Canvas 缩放因子及像素单位 |
+| SelectableBranchNode | State, Normal, Highlighted, Pressed, Selected, Disabled | Out | 根据 Selectable 状态值在不同颜色/向量之间切换 |
+| SelectableStateNode | 无 | State | 输出当前 UI Selectable 的状态值（0=Normal, 1=Highlighted, 2=Pressed, 3=Selected, 4=Disabled） |
+| SliderValueNode | 无 | Value, Direction | 输出 UGUI Slider 组件的当前值及滑动方向向量 |
+| ToggleStateNode | 无 | State | 输出 UGUI Toggle 组件的开关状态（True/False） |
+| UniversalSampleBufferNode | UV | output | 采样 URP 的全屏缓冲区（如法线、运动矢量等） |
+| SubGraphNode | (动态) | (动态) | 引用并实例化一个子图 |
+
+---
+
+## 节点参数表
+
+### ColorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `color` | `[R, G, B, A]` | `[1, 1, 1, 1]` | 输出颜色值 |
+| `mode` | `"Default"` 或 `"HDR"` | `"Default"` | 颜色模式 |
+
+### ChannelMaskNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `channelMask` | `int` | `-1` | 位掩码：bit0=Red, bit1=Green, bit2=Blue, bit3=Alpha |
+
+### NormalBlendNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `blendMode` | `"Default"` 或 `"Reoriented"` | `"Default"` | 法线混合模式 |
+
+### NormalFromHeightNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `outputSpace` | `"Tangent"` 或 `"World"` | `"Tangent"` | 输出法线的坐标空间 |
+
+### NormalUnpackNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `normalMapSpace` | `"Tangent"` 或 `"Object"` | `"Tangent"` | 法线贴图的空间 |
+
+### ColorspaceConversionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `from` | `"RGB"` 或 `"Linear"` 或 `"HSV"` | `"RGB"` | 源颜色空间 |
+| `to` | `"RGB"` 或 `"Linear"` 或 `"HSV"` | `"RGB"` | 目标颜色空间 |
+
+### FlipNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `flipRed` | `bool` | `false` | 是否翻转红色通道 |
+| `flipGreen` | `bool` | `false` | 是否翻转绿色通道 |
+| `flipBlue` | `bool` | `false` | 是否翻转蓝色通道 |
+| `flipAlpha` | `bool` | `false` | 是否翻转透明通道 |
+
+### SwizzleNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `mask` | `string` | `"xxxx"` | 掩码字符串，例如 "xyzw", "rgba", "x", "yz" 等 |
+
+### ExponentialNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `exponentialBase` | `"BaseE"` 或 `"Base2"` | `"BaseE"` | 指数运算的底数 |
+
+### LogNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `logBase` | `"BaseE"` 或 `"Base2"` 或 `"Base10"` | `"BaseE"` | 对数运算的底数 |
+
+### ReciprocalNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `method` | `"Default"` 或 `"Fast"` | `"Default"` | 倒数计算方法 |
+
+### MatrixConstructionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `axis` | `"Row"` 或 `"Column"` | `"Row"` | 从行向量还是列向量构造矩阵 |
+
+### LightTextureNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `blendStyle` | `"LightTex0"` 或 `"LightTex1"` 或 `"LightTex2"` 或 `"LightTex3"` | `"LightTex0"` | 光照纹理索引 |
+
+### MatrixSplitNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `axis` | `"Row"` 或 `"Column"` | `"Row"` | 按行还是按列拆分矩阵 |
+
+### BooleanNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `bool` | `false` | 输出的布尔值 |
+
+### ConstantNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `constant` | `"PI"` 或 `"TAU"` 或 `"PHI"` 或 `"E"` 或 `"SQRT2"` | `"PI"` | 输出的数学常量 |
+
+### IntegerNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `int` | `0` | 输出的整数值 |
+
+### SliderNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `[current, min, max]` | `[0, 0, 1]` | 当前值、最小值、最大值 |
+
+### UniversalSampleBufferNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `bufferType` | `"NormalWorldSpace"` 或 `"MotionVectors"` 或 `"BlitSource"` | `"NormalWorldSpace"` | 要采样的缓冲区类型 |
+| `_ScreenPosition` | `"Default"` 或 `"Raw"` 或 `"Center"` 或 `"Tiled"` 或 `"Pixel"` | `"Default"` | 屏幕空间坐标模式 |
+
+### Vector1Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `float` | `0` | 输出的一维向量值 |
+
+### Vector2Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `[x, y]` | `[0, 0]` | 输出的二维向量值 |
+
+### Vector3Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `[x, y, z]` | `[0, 0, 0]` | 输出的三维向量值 |
+
+### Vector4Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `value` | `[x, y, z, w]` | `[0, 0, 0, 0]` | 输出的四维向量值 |
+
+### ChannelMixerNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `outRed` | `[r, g, b]` | `[1, 0, 0]` | 输出红色通道的混合权重 |
+| `outGreen` | `[r, g, b]` | `[0, 1, 0]` | 输出绿色通道的混合权重 |
+| `outBlue` | `[r, g, b]` | `[0, 0, 1]` | 输出蓝色通道的混合权重 |
+
+### HueNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `mode` | `"Degrees"` 或 `"Normalized"` | `"Degrees"` | 色相偏移的单位模式 |
+
+### InvertColorsNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `invertRed` | `bool` | `false` | 是否反转红色通道 |
+| `invertGreen` | `bool` | `false` | 是否反转绿色通道 |
+| `invertBlue` | `bool` | `false` | 是否反转蓝色通道 |
+| `invertAlpha` | `bool` | `false` | 是否反转透明通道 |
+
+### BlendNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `blendMode` | `"Burn"`, `"Darken"`, `"Difference"`, `"Dodge"`, `"Divide"`, `"Exclusion"`, `"HardLight"`, `"HardMix"`, `"Lighten"`, `"LinearBurn"`, `"LinearDodge"`, `"LinearLight"`, `"LinearLightAddSub"`, `"Multiply"`, `"Negation"`, `"Overlay"`, `"PinLight"`, `"Screen"`, `"SoftLight"`, `"Subtract"`, `"VividLight"`, `"Overwrite"` | `"Overlay"` | 颜色混合模式 |
+
+### PositionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `positionSource` | `"Default"` 或 `"Predisplacement"` | `"Default"` | 位置数据来源 |
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"`, `"AbsoluteWorld"` | `"Object"` | 输出位置的坐标空间 |
+
+### NormalVectorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"` | `"Object"` | 输出法线的坐标空间 |
+
+### TangentVectorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"` | `"Object"` | 输出切线的坐标空间 |
+
+### BitangentVectorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"` | `"Object"` | 输出副切线的坐标空间 |
+
+### ViewDirectionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"` | `"World"` | 输出视图方向的坐标空间 |
+
+### ViewVectorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Space` | `"Object"`, `"View"`, `"World"`, `"Tangent"` | `"World"` | 输出视图向量的坐标空间 |
+
+### ScreenPositionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `screenSpaceType` | `"Default"`, `"Position"`, `"Raw"`, `"Center"`, `"Tiled"`, `"Pixel"` | `"Default"` | 屏幕空间坐标类型 |
+
+### UVNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `uvChannel` | `"UV0"`, `"UV1"`, `"UV2"`, `"UV3"` | `"UV0"` | 输出的 UV 通道 |
+
+### BakedGINode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `applyScaling` | `bool` | `true` | 是否应用缩放 |
+
+### Matrix2Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `row0` | `[x, y]` | `[1, 0]` | 第一行向量 |
+| `row1` | `[x, y]` | `[0, 1]` | 第二行向量 |
+
+### Matrix3Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `row0` | `[x, y, z]` | `[1, 0, 0]` | 第一行向量 |
+| `row1` | `[x, y, z]` | `[0, 1, 0]` | 第二行向量 |
+| `row2` | `[x, y, z]` | `[0, 0, 1]` | 第三行向量 |
+
+### Matrix4Node 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `row0` | `[x, y, z, w]` | `[1, 0, 0, 0]` | 第一行向量 |
+| `row1` | `[x, y, z, w]` | `[0, 1, 0, 0]` | 第二行向量 |
+| `row2` | `[x, y, z, w]` | `[0, 0, 1, 0]` | 第三行向量 |
+| `row3` | `[x, y, z, w]` | `[0, 0, 0, 1]` | 第四行向量 |
+
+### DielectricSpecularNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `type` | `"Common"`, `"RustedMetal"`, `"Water"`, `"Ice"`, `"Glass"`, `"Custom"` | `"Common"` | 电介质材料类型 |
+| `range` | `float` | `0.5` | 范围值 |
+| `indexOfRefraction` | `float` | `1.0` | 折射率 |
+
+### MetalReflectanceNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `material` | `"Iron"`, `"Silver"`, `"Aluminium"`, `"Gold"`, `"Copper"`, `"Chromium"`, `"Nickel"`, `"Titanium"`, `"Cobalt"`, `"Platinum"` | `"Iron"` | 金属材料类型 |
+
+### SceneDepthNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `depthSamplingMode` | `"Linear01"`, `"Raw"`, `"Eye"` | `"Linear01"` | 深度采样模式 |
+
+### SceneDepthDifferenceNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `depthSamplingMode` | `"Linear01"`, `"Raw"`, `"Eye"` | `"Linear01"` | 深度采样模式 |
+
+### ProceduralVirtualTextureNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `vtName` | `string` | `"ProceduralVirtualTexture"` | 虚拟纹理名称 |
+| `layers` | `int` | `2` | 层数 |
+| `shaderDeclaration` | `"DoNotDeclare"`, `"Global"`, `"UnityPerMaterial"` | `"UnityPerMaterial"` | 着色器声明方式 |
+
+### CustomInterpolatorNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `customBlockNodeName` | `string` | `"K_INVALID"` | 自定义块节点名称 |
+| `customWidth` | `"Float"`, `"Vector2"`, `"Vector3"`, `"Vector4"` | `"Vector4"` | 自定义插值器的数据宽度 |
+
+### PropertyNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `propertyReferenceName` | `string` | `null` | 引用的属性名称 |
+
+### TransformationMatrixNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `matrixType` | `"Model"`, `"InverseModel"`, `"View"`, `"InverseView"`, `"Projection"`, `"InverseProjection"`, `"ViewProjection"`, `"InverseViewProjection"` | `"Model"` | 变换矩阵类型 |
+
+### SampleTexture2DNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `textureType` | `"Default"` 或 `"Normal"` | `"Default"` | 纹理类型 |
+| `normalMapSpace` | `"Tangent"` 或 `"Object"` | `"Tangent"` | 法线贴图空间（仅当 textureType 为 Normal 时有效） |
+| `enableGlobalMipBias` | `bool` | `true` | 是否启用全局 Mip 偏移 |
+| `mipSamplingMode` | `"Standard"`, `"LOD"`, `"Gradient"`, `"Bias"` | `"Standard"` | Mip 采样模式 |
+
+### SampleTexture2DLODNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `textureType` | `"Default"` 或 `"Normal"` | `"Default"` | 纹理类型 |
+| `normalMapSpace` | `"Tangent"` 或 `"Object"` | `"Tangent"` | 法线贴图空间（仅当 textureType 为 Normal 时有效） |
+
+### SampleTexture2DArrayNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `enableGlobalMipBias` | `bool` | `false` | 是否启用全局 Mip 偏移 |
+| `mipSamplingMode` | `"Standard"`, `"LOD"`, `"Gradient"`, `"Bias"` | `"Standard"` | Mip 采样模式 |
+
+### SampleTexture3DNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `mipSamplingMode` | `"Standard"` 或 `"LOD"` | `"Standard"` | Mip 采样模式 |
+
+### SampleVirtualTextureNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `addressMode` | `"VtAddressMode_Wrap"` 或 `"VtAddressMode_Clamp"` | `"VtAddressMode_Wrap"` | 寻址模式 |
+| `lodCalculation` | `"VtLevel_Automatic"`, `"VtLevel_Lod"`, `"VtLevel_Bias"`, `"VtLevel_Derivatives"` | `"VtLevel_Automatic"` | LOD 计算方式 |
+| `sampleQuality` | `"VtSampleQuality_Low"` 或 `"VtSampleQuality_High"` | `"VtSampleQuality_High"` | 采样质量 |
+| `enableGlobalMipBias` | `bool` | `true` | 是否启用全局 Mip 偏移 |
+| `noFeedback` | `bool` | `false` | 是否禁用反馈 |
+
+### SamplerStateNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `filter` | `"Linear"`, `"Point"`, `"Trilinear"` | `"Linear"` | 过滤模式 |
+| `wrap` | `"Repeat"`, `"Clamp"`, `"Mirror"`, `"MirrorOnce"` | `"Repeat"` | 包裹模式 |
+| `anisotropic` | `"None"`, `"Aniso2"`, `"Aniso4"`, `"Aniso8"`, `"Aniso16"` | `"None"` | 各向异性级别 |
+
+### RefractNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `mode` | `"CriticalAngle"` 或 `"Safe"` | `"Safe"` | 折射计算模式 |
+
+### RotateAboutAxisNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `unit` | `"Radians"` 或 `"Degrees"` | `"Radians"` | 旋转角度单位 |
+
+### TransformNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `from` | `"Object"`, `"View"`, `"World"`, `"Tangent"`, `"AbsoluteWorld"`, `"RelativeWorld"` | `"Object"` | 源坐标空间 |
+| `to` | `"Object"`, `"View"`, `"World"`, `"Tangent"`, `"AbsoluteWorld"`, `"RelativeWorld"` | `"World"` | 目标坐标空间 |
+| `conversionType` | `"Position"`, `"Direction"`, `"Normal"` | `"Position"` | 转换类型 |
+| `normalize` | `bool` | `true` | 是否归一化方向向量 |
+
+### GradientNoiseNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `hashType` | `"Deterministic"`, `"LegacyMod"`, `"LegacySine"` | `"Deterministic"` | 哈希算法类型 |
+
+### SimpleNoiseNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `hashType` | `"Deterministic"`, `"LegacyMod"`, `"LegacySine"` | `"Deterministic"` | 哈希算法类型 |
+
+### VoronoiNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `hashType` | `"Deterministic"`, `"LegacyMod"`, `"LegacySine"` | `"Deterministic"` | 哈希算法类型 |
+
+### RectangleNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `clampType` | `"Fastest"` 或 `"Nicest"` | `"Fastest"` | 钳位类型 |
+
+### ComparisonNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `comparisonType` | `"Equal"`, `"NotEqual"`, `"Less"`, `"LessOrEqual"`, `"Greater"`, `"GreaterOrEqual"` | `"Equal"` | 比较操作类型 |
+
+### ParallaxMappingNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `channel` | `"Red"`, `"Green"`, `"Blue"`, `"Alpha"` | `"Green"` | 用于视差映射的通道 |
+
+### ParallaxOcclusionMappingNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `channel` | `"Red"`, `"Green"`, `"Blue"`, `"Alpha"` | `"Red"` | 用于视差遮挡映射的通道 |
+
+### RotateNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `unit` | `"Radians"` 或 `"Degrees"` | `"Radians"` | 旋转角度单位 |
+
+### TriplanarNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `textureType` | `"Default"` 或 `"Normal"` | `"Default"` | 纹理类型 |
+| `inputSpace` | `"Object"`, `"View"`, `"World"`, `"Tangent"`, `"AbsoluteWorld"`, `"RelativeWorld"` | `"AbsoluteWorld"` | 输入位置的坐标空间 |
+| `normalOutputSpace` | `"Object"`, `"View"`, `"World"`, `"Tangent"`, `"AbsoluteWorld"`, `"RelativeWorld"` | `"Tangent"` | 输出法线的坐标空间 |
+
+### FlipbookNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `invertX` | `bool` | `false` | 是否翻转 X 方向 |
+| `invertY` | `bool` | `true` | 是否翻转 Y 方向 |
+
+### CustomFunctionNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `sourceType` | `"File"` 或 `"String"` | `"File"` | 函数源码类型 |
+| `functionName` | `string` | `"Enter function name here..."` | **不带精度后缀**的基础函数名，如 `"MyFunction"` |
+| `functionSource` | `string` | `"Enter function source file path here..."` | 源文件路径（当 sourceType 为 File 时有效） |
+| `functionBody` | `string` | `"Enter function body here..."` | 函数体（当 sourceType 为 String 时有效）。函数定义**必须包含精度后缀 `_float` 或 `_half`**，例如 `void MyFunction_float(...)` |
+| `usePragmas` | `bool` | `true` | 是否使用文件中的 pragma 指令 |
+| `Slots` | `List<SlotDefinition>` | `null` | 自定义插槽定义列表 |
+
+### SubGraphNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `identifier` | `string` | `null` | 子图标识符（GUID/名称/路径/别名） |
+| `identifierType` | `"Auto"`, `"Guid"`, `"AssetName"`, `"Alias"`, `"AssetPath"` | `"Auto"` | 标识符类型 |
+
+### CalculateLevelOfDetailTexture2DNode 参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `clamp` | `bool` | `true` | 是否钳位 LOD 值 |
+
+### Float 属性（黑板）参数
+| 参数名 | 类型 | 默认值 | 说明 |
+|-------|------|--------|------|
+| `Name` | `string` | - | 属性显示名称，同时作为默认引用名 |
+| `Type` | `"Float"` | - | 固定值 `"Float"` |
+| `DefaultValue` | `float` | `0` | 默认浮点数值 |
+| `Mode` | `"Default"`, `"Slider"`, `"Integer"`, `"Enum"` | `"Default"` | 属性在材质面板中的显示模式。<br>• `Default`：普通浮点输入框。<br>• `Slider`：滑块控件，需配合 `Range` 字段。<br>• `Integer`：整数输入框。<br>• `Enum`：下拉枚举（需配合 `EnumEntries`，当前暂未实现）。 |
+| `Range` | `[min, max]` | - | 当 `Mode` 为 `"Slider"` 时必需，定义滑块的取值范围。 |
+| `EnumEntries` | `[ { "DisplayName": "选项1", "Value": 0 }, ... ]` | - | 当 `Mode` 为 `"Enum"` 时必需（当前暂未实现）。 |
+
+---
+
+## JSON 构建基本要求
+- 必须包含 `"Pipeline"` 和 `"Target"` 字段。
+- `"Nodes"` 数组中每个节点必须有 `"Id"` 和 `"Type"`。
+- 连接关系在 `"Connections"` 中定义，使用 `"From"`, `"FromSlot"`, `"To"`, `"ToSlot"`。
+- 输出到 Master 堆栈时，使用 `"Blocks"` 数组替代 MasterNode 连接。
+- 槽路径格式：`节点类型.输入输出类型.槽名称`。
+
+## CustomFunctionNode 构建规则（必读）
+1. `functionName` 字段填写**不带精度后缀的基础名称**，例如 `"MyFunction"`。
+2. `functionBody` 字段中的函数定义**必须包含精度后缀 `_float` 或 `_half`**，例如 `"void MyFunction_float(...)"`。
+3. 多个输出插槽在 `Slots` 数组中以 `IsInput: false` 声明，每个输出可指定不同的 `ValueType`。
+4. `DefaultValue` 始终为长度为 4 的数组 `[x, y, z, w]`。对于低维类型只使用前几个分量，例如 Vector1 使用 `[value, 0, 0, 0]`。
+
+## CustomFunctionNode 构建示例
+**示例：两个不同类型输出（float 和 float3）**
+```json
+{
+  "Id": "my_func",
+  "Type": "CustomFunctionNode",
+  "Inputs": {
+    "sourceType": "File",
+    "functionName": "MyAdvancedFunction",
+    "functionBody": "void MyAdvancedFunction_float(float InputA, out float Out1, out float3 Out2) { Out1 = InputA * 2.0; Out2 = float3(InputA, 0, 0); }",
+    "usePragmas": true
+  },
+  "Slots": [
+    { "DisplayName": "InputA", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [0, 0, 0, 0] },
+    { "DisplayName": "Out1",   "ValueType": "Vector1", "IsInput": false },
+    { "DisplayName": "Out2",   "ValueType": "Vector3", "IsInput": false }
+  ]
+}
+
+以下是完整的示例JSON
+{
+  "Pipeline": "URP",
+  "Target": "Unlit",
+  "Blackboard": [
+    { "Name": "_MainTex", "Type": "Texture2D", "DefaultValue": "white" },
+    { "Name": "_BaseColor", "Type": "Color", "DefaultValue": [0.9, 0.9, 0.9, 1.0] },
+    { "Name": "_RampMap", "Type": "Texture2D", "DefaultValue": "white" },
+    { "Name": "_RampTemperature", "Type": "Float", "DefaultValue": 0.5, "Mode": "Slider", "Range": [0.0, 1.0] },
+    { "Name": "_ShadowSmoothness", "Type": "Float", "DefaultValue": 0.05, "Mode": "Slider", "Range": [0.0, 0.5] },
+    { "Name": "_SpecularSize", "Type": "Float", "DefaultValue": 0.96, "Mode": "Slider", "Range": [0.5, 1.0] },
+    { "Name": "_SpecularIntensity", "Type": "Float", "DefaultValue": 1.0, "Mode": "Slider", "Range": [0.0, 2.0] },
+    { "Name": "_SpecularColor", "Type": "Color", "DefaultValue": [1.0, 1.0, 1.0, 1.0] },
+    { "Name": "_RimPower", "Type": "Float", "DefaultValue": 3.0, "Mode": "Slider", "Range": [0.5, 10.0] },
+    { "Name": "_RimIntensity", "Type": "Float", "DefaultValue": 0.5, "Mode": "Slider", "Range": [0.0, 2.0] },
+    { "Name": "_RimColor", "Type": "Color", "DefaultValue": [0.6, 0.8, 1.0, 1.0] },
+    { "Name": "_PackedMap", "Type": "Texture2D", "DefaultValue": "black" },
+    { "Name": "_EmissionColor", "Type": "Color", "DefaultValue": [0.0, 0.0, 0.0, 1.0] },
+    { "Name": "_PosterizeSteps", "Type": "Float", "DefaultValue": 0.0, "Mode": "Slider", "Range": [0.0, 10.0] }
+  ],
+  "Nodes": [
+    { "Id": "UV0", "Type": "UVNode" },
+    { "Id": "SamplerState", "Type": "SamplerStateNode" },
+    { "Id": "MainTexProp", "Type": "PropertyNode", "PropertyName": "_MainTex" },
+    { "Id": "SampleMainTex", "Type": "SampleTexture2DNode" },
+    { "Id": "BaseColorProp", "Type": "PropertyNode", "PropertyName": "_BaseColor" },
+    { "Id": "MultiplyBaseColor", "Type": "MultiplyNode" },
+    { "Id": "PackedMapProp", "Type": "PropertyNode", "PropertyName": "_PackedMap" },
+    { "Id": "SamplePackedMap", "Type": "SampleTexture2DNode" },
+    { "Id": "SplitPacked", "Type": "SplitNode" },
+    { "Id": "WorldNormal", "Type": "NormalVectorNode", "Inputs": { "Space": "World" } },
+    { "Id": "ViewDir", "Type": "ViewDirectionNode", "Inputs": { "Space": "World" } },
+    { "Id": "MainLightDir", "Type": "MainLightDirectionNode" },
+    { "Id": "WorldPos", "Type": "PositionNode", "Inputs": { "Space": "AbsoluteWorld" } },
+    {
+      "Id": "CustomLightingFunc",
+      "Type": "CustomFunctionNode",
+      "Inputs": {
+        "sourceType": "File",
+        "functionName": "ToonLighting",
+        "functionSource": "",
+        "functionBody": "#if !defined(SHADERGRAPH_PREVIEW)\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n#endif\n\nvoid ToonLighting_float(\n    float3 WorldPos,\n    float3 WorldNormal,\n    float3 ViewDir,\n    float3 MainLightDir,\n    float3 BaseColor,\n    float3 RampColor,\n    float Roughness,\n    float AO,\n    float3 SpecularColor,\n    float SpecularSize,\n    float SpecularIntensity,\n    float RimPower,\n    float RimIntensity,\n    float3 RimColor,\n    out float3 OutColor)\n{\n    #if defined(SHADERGRAPH_PREVIEW)\n    OutColor = BaseColor;\n    #else\n    float4 shadowCoord = TransformWorldToShadowCoord(WorldPos);\n    Light mainLight = GetMainLight(shadowCoord);\n    float3 lightColor = mainLight.color;\n    float shadowAtten = mainLight.shadowAttenuation;\n\n    float NdotL = dot(WorldNormal, MainLightDir);\n    float halfLambert = NdotL * 0.5 + 0.5;\n    float3 diffuse = BaseColor * RampColor * lightColor * shadowAtten * AO;\n\n    float3 halfVec = normalize(ViewDir + MainLightDir);\n    float NdotH = saturate(dot(WorldNormal, halfVec));\n    float specMask = step(SpecularSize, NdotH) * (1.0 - Roughness);\n    float3 specular = specMask * SpecularIntensity * SpecularColor;\n\n    float fresnel = 1.0 - saturate(dot(WorldNormal, ViewDir));\n    float rim = pow(fresnel, RimPower) * RimIntensity;\n    float3 rimColor = rim * RimColor;\n\n    OutColor = diffuse + specular + rimColor;\n    #endif\n}",
+        "usePragmas": true
+      },
+      "Slots": [
+        { "DisplayName": "WorldPos", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "WorldNormal", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,1,0] },
+        { "DisplayName": "ViewDir", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "MainLightDir", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "BaseColor", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "RampColor", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "Roughness", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "AO", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [1,0,0,0] },
+        { "DisplayName": "SpecularColor", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [1,1,1,0] },
+        { "DisplayName": "SpecularSize", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [0.96,0,0,0] },
+        { "DisplayName": "SpecularIntensity", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [1,0,0,0] },
+        { "DisplayName": "RimPower", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [3,0,0,0] },
+        { "DisplayName": "RimIntensity", "ValueType": "Vector1", "IsInput": true, "DefaultValue": [0.5,0,0,0] },
+        { "DisplayName": "RimColor", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0.6,0.8,1,0] },
+        { "DisplayName": "OutColor", "ValueType": "Vector3", "IsInput": false }
+      ]
+    },
+    { "Id": "RampMapProp", "Type": "PropertyNode", "PropertyName": "_RampMap" },
+    { "Id": "RampTempProp", "Type": "PropertyNode", "PropertyName": "_RampTemperature" },
+    { "Id": "ShadowSmoothnessProp", "Type": "PropertyNode", "PropertyName": "_ShadowSmoothness" },
+    { "Id": "SpecularColorProp", "Type": "PropertyNode", "PropertyName": "_SpecularColor" },
+    { "Id": "SpecularSizeProp", "Type": "PropertyNode", "PropertyName": "_SpecularSize" },
+    { "Id": "SpecularIntensityProp", "Type": "PropertyNode", "PropertyName": "_SpecularIntensity" },
+    { "Id": "RimPowerProp", "Type": "PropertyNode", "PropertyName": "_RimPower" },
+    { "Id": "RimIntensityProp", "Type": "PropertyNode", "PropertyName": "_RimIntensity" },
+    { "Id": "RimColorProp", "Type": "PropertyNode", "PropertyName": "_RimColor" },
+    { "Id": "NdotL", "Type": "DotProductNode" },
+    { "Id": "RemapNdotL", "Type": "RemapNode", "Inputs": { "InMinMax": [-1.0, 1.0], "OutMinMax": [0.0, 1.0] } },
+    { "Id": "AddSmoothness", "Type": "AddNode" },
+    { "Id": "SaturateNdotL", "Type": "SaturateNode" },
+    { "Id": "SplitNdotL", "Type": "SplitNode" },
+    { "Id": "CombineRampUV", "Type": "CombineNode" },
+    { "Id": "SampleRamp", "Type": "SampleTexture2DNode" },
+    { "Id": "EmissionColorProp", "Type": "PropertyNode", "PropertyName": "_EmissionColor" },
+    { "Id": "MultiplyEmission", "Type": "MultiplyNode" },
+    { "Id": "AddEmission", "Type": "AddNode" },
+    { "Id": "PosterizeStepsProp", "Type": "PropertyNode", "PropertyName": "_PosterizeSteps" },
+    { "Id": "PosterizeColor", "Type": "PosterizeNode" },
+    { "Id": "ZeroFloat", "Type": "Vector1Node", "Inputs": { "X": 0.0 } },
+    { "Id": "ComparisonStepsZero", "Type": "ComparisonNode", "Inputs": { "comparisonType": "Equal" } },
+    { "Id": "BranchPosterize", "Type": "BranchNode" }
+  ],
+  "Connections": [
+    { "From": "UV0", "FromSlot": "UVNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "MainTexProp", "FromSlot": "PropertyNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+    { "From": "SampleMainTex", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "MultiplyBaseColor", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "BaseColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyBaseColor", "ToSlot": "MultiplyNode.Input.B" },
+
+    { "From": "UV0", "FromSlot": "UVNode.Output.Out", "To": "SamplePackedMap", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "PackedMapProp", "FromSlot": "PropertyNode.Output.Out", "To": "SamplePackedMap", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SamplePackedMap", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+    { "From": "SamplePackedMap", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "SplitPacked", "ToSlot": "SplitNode.Input.In" },
+
+    { "From": "WorldNormal", "FromSlot": "NormalVectorNode.Output.Out", "To": "NdotL", "ToSlot": "DotProductNode.Input.A" },
+    { "From": "MainLightDir", "FromSlot": "MainLightDirectionNode.Output.Direction", "To": "NdotL", "ToSlot": "DotProductNode.Input.B" },
+    { "From": "NdotL", "FromSlot": "DotProductNode.Output.Out", "To": "RemapNdotL", "ToSlot": "RemapNode.Input.In" },
+    { "From": "RemapNdotL", "FromSlot": "RemapNode.Output.Out", "To": "AddSmoothness", "ToSlot": "AddNode.Input.A" },
+    { "From": "ShadowSmoothnessProp", "FromSlot": "PropertyNode.Output.Out", "To": "AddSmoothness", "ToSlot": "AddNode.Input.B" },
+    { "From": "AddSmoothness", "FromSlot": "AddNode.Output.Out", "To": "SaturateNdotL", "ToSlot": "SaturateNode.Input.In" },
+    { "From": "SaturateNdotL", "FromSlot": "SaturateNode.Output.Out", "To": "SplitNdotL", "ToSlot": "SplitNode.Input.In" },
+    { "From": "SplitNdotL", "FromSlot": "SplitNode.Output.R", "To": "CombineRampUV", "ToSlot": "CombineNode.Input.R" },
+    { "From": "RampTempProp", "FromSlot": "PropertyNode.Output.Out", "To": "CombineRampUV", "ToSlot": "CombineNode.Input.G" },
+    { "From": "CombineRampUV", "FromSlot": "CombineNode.Output.RGBA", "To": "SampleRamp", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "RampMapProp", "FromSlot": "PropertyNode.Output.Out", "To": "SampleRamp", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SampleRamp", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+
+    { "From": "WorldPos", "FromSlot": "PositionNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.WorldPos" },
+    { "From": "WorldNormal", "FromSlot": "NormalVectorNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.WorldNormal" },
+    { "From": "ViewDir", "FromSlot": "ViewDirectionNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.ViewDir" },
+    { "From": "MainLightDir", "FromSlot": "MainLightDirectionNode.Output.Direction", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.MainLightDir" },
+    { "From": "MultiplyBaseColor", "FromSlot": "MultiplyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.BaseColor" },
+    { "From": "SampleRamp", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.RampColor" },
+    { "From": "SplitPacked", "FromSlot": "SplitNode.Output.R", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.Roughness" },
+    { "From": "SplitPacked", "FromSlot": "SplitNode.Output.B", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.AO" },
+    { "From": "SpecularColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.SpecularColor" },
+    { "From": "SpecularSizeProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.SpecularSize" },
+    { "From": "SpecularIntensityProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.SpecularIntensity" },
+    { "From": "RimPowerProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.RimPower" },
+    { "From": "RimIntensityProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.RimIntensity" },
+    { "From": "RimColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "CustomLightingFunc", "ToSlot": "CustomFunctionNode.Input.RimColor" },
+
+    { "From": "CustomLightingFunc", "FromSlot": "CustomFunctionNode.Output.OutColor", "To": "AddEmission", "ToSlot": "AddNode.Input.A" },
+    { "From": "SplitPacked", "FromSlot": "SplitNode.Output.A", "To": "MultiplyEmission", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "EmissionColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyEmission", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "MultiplyEmission", "FromSlot": "MultiplyNode.Output.Out", "To": "AddEmission", "ToSlot": "AddNode.Input.B" },
+
+    { "From": "AddEmission", "FromSlot": "AddNode.Output.Out", "To": "BranchPosterize", "ToSlot": "BranchNode.Input.True" },
+    { "From": "AddEmission", "FromSlot": "AddNode.Output.Out", "To": "PosterizeColor", "ToSlot": "PosterizeNode.Input.In" },
+    { "From": "PosterizeStepsProp", "FromSlot": "PropertyNode.Output.Out", "To": "PosterizeColor", "ToSlot": "PosterizeNode.Input.Steps" },
+    { "From": "PosterizeColor", "FromSlot": "PosterizeNode.Output.Out", "To": "BranchPosterize", "ToSlot": "BranchNode.Input.False" },
+    { "From": "PosterizeStepsProp", "FromSlot": "PropertyNode.Output.Out", "To": "ComparisonStepsZero", "ToSlot": "ComparisonNode.Input.A" },
+    { "From": "ZeroFloat", "FromSlot": "Vector1Node.Output.Out", "To": "ComparisonStepsZero", "ToSlot": "ComparisonNode.Input.B" },
+    { "From": "ComparisonStepsZero", "FromSlot": "ComparisonNode.Output.Out", "To": "BranchPosterize", "ToSlot": "BranchNode.Input.Predicate" }
+  ],
+  "Blocks": [
+    { "Context": "Fragment", "Type": "BaseColor", "SourceNode": "BranchPosterize", "SourceSlot": "BranchNode.Output.Out" }
+  ]
+}
+## CustomFunctionNode 常见问题与解决方案
+
+### 1. 使用 URP 光照 API 时出现 `unrecognized identifier 'Light'` 或 `GetMainLight` 未定义
+**原因**：预览模式下 URP 的 `Lighting.hlsl` 未被包含，且 ShaderGraph 主着色器包含顺序导致类型未定义。
+
+**解决方案**：在 `functionBody` 中使用条件编译隔离预览模式，并显式包含头文件（仅非预览模式下）。同时传入世界位置以计算阴影坐标，兼容不同 URP 版本。
+
+**正确示例（URP Unlit 卡通光照）**：
+```json
+{
+  "Id": "CustomLightingFunc",
+  "Type": "CustomFunctionNode",
+  "Inputs": {
+    "sourceType": "File",
+    "functionName": "ToonLighting",
+    "functionSource": "",
+    "functionBody": "#if !defined(SHADERGRAPH_PREVIEW)\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n#endif\n\nvoid ToonLighting_float(\n    float3 WorldPos,\n    float3 WorldNormal,\n    float3 ViewDir,\n    float3 MainLightDir,\n    float3 BaseColor,\n    float3 RampColor,\n    float Roughness,\n    float AO,\n    float3 SpecularColor,\n    float SpecularSize,\n    float SpecularIntensity,\n    float RimPower,\n    float RimIntensity,\n    float3 RimColor,\n    out float3 OutColor)\n{\n    #if defined(SHADERGRAPH_PREVIEW)\n    OutColor = BaseColor;\n    #else\n    float4 shadowCoord = TransformWorldToShadowCoord(WorldPos);\n    Light mainLight = GetMainLight(shadowCoord);\n    float3 lightColor = mainLight.color;\n    float shadowAtten = mainLight.shadowAttenuation;\n\n    float NdotL = dot(WorldNormal, MainLightDir);\n    float halfLambert = NdotL * 0.5 + 0.5;\n    float3 diffuse = BaseColor * RampColor * lightColor * shadowAtten * AO;\n\n    float3 halfVec = normalize(ViewDir + MainLightDir);\n    float NdotH = saturate(dot(WorldNormal, halfVec));\n    float specMask = step(SpecularSize, NdotH) * (1.0 - Roughness);\n    float3 specular = specMask * SpecularIntensity * SpecularColor;\n\n    float fresnel = 1.0 - saturate(dot(WorldNormal, ViewDir));\n    float rim = pow(fresnel, RimPower) * RimIntensity;\n    float3 rimColor = rim * RimColor;\n\n    OutColor = diffuse + specular + rimColor;\n    #endif\n}",
+    "usePragmas": true
+  },
+  "Slots": [ ... ]
+}
+2. 编译时提示 undeclared identifier 'MyFunction_float'
+原因：functionName 与 functionBody 中的函数名精度后缀不一致。
+
+规则：
+
+functionName 填写不带精度后缀的基础名称（如 "ToonLighting"）。
+
+functionBody 中的函数定义必须包含精度后缀 _float 或 _half（如 void ToonLighting_float(...)）。
+
+3. 材质显示为黑色或只有环境光反射
+原因：
+
+未正确获取主光源数据（如 URP 版本需传入阴影坐标）。
+
+在 Lit 目标下将自定义光照输出连接到了 BaseColor，导致与内置 PBR 叠加错误。
+
+解决方案：
+
+使用 Unlit 目标，将自定义光照最终颜色直接输出到 BaseColor 块。
+
+确保场景中存在主光源，且强度 > 0。
+
+在 functionBody 中使用 TransformWorldToShadowCoord(WorldPos) 获取阴影坐标。
+
+4. 预览窗口正常，但场景中模型变黑
+原因：预览模式与真实编译分支代码不一致，或真实编译时主光源数据获取失败。
+
+调试技巧：
+
+临时将 OutColor 设为 MainLightDir * 0.5 + 0.5 以验证方向向量传递是否正确。
+
+检查 WorldPos 是否传入 AbsoluteWorld 空间位置。
+
+在 Graph Settings 中勾选 "Preserve Specular Lighting" 和 "Preserve Lightmap UVs"（如果有）。
+
+text
+
+---
+
+### 知识库应用建议
+- **AI 生成工具**：在解析 CustomFunctionNode 相关 JSON 时，若检测到函数体包含 URP 光照函数（如 `GetMainLight`），应自动采用上述示例中的条件编译和阴影坐标写法，并提示用户使用 Unlit 目标。
+- **用户参考**：遇到类似错误时，可直接查阅此部分内容进行自我排查和修复。
+## 风格化卡通着色器完整示例（UnityChan Hair）
+
+以下是一个完整的 URP Unlit Shader Graph JSON 示例，实现了工业级风格化卡通头发效果。该示例展示了如何构建自包含的卡通光照模型，不依赖外部控制纹理（如 Falloff/RimLight Sampler），所有效果均通过数学公式和材质参数控制。
+
+### 示例 JSON：`StylizedHairToonShader`
+
+```json
+{
+  "Pipeline": "URP",
+  "Target": "Unlit",
+  "Blackboard": [
+    { "Name": "_BaseColor", "Type": "Color", "DefaultValue": [1, 1, 1, 1] },
+    { "Name": "_ShadowColor", "Type": "Color", "DefaultValue": [0.5, 0.4, 0.6, 1] },
+    { "Name": "_ShadowStep", "Type": "Float", "DefaultValue": 0.5, "Mode": "Slider", "Range": [0, 1] },
+    { "Name": "_ShadowSmoothness", "Type": "Float", "DefaultValue": 0.15, "Mode": "Slider", "Range": [0, 0.5] },
+    { "Name": "_MainTex", "Type": "Texture2D", "DefaultValue": "white" },
+    { "Name": "_NormalMap", "Type": "Texture2D", "DefaultValue": "bump" },
+    { "Name": "_NormalStrength", "Type": "Float", "DefaultValue": 1, "Mode": "Slider", "Range": [0, 2] },
+    { "Name": "_SpecularColor", "Type": "Color", "DefaultValue": [1, 0.95, 0.9, 1] },
+    { "Name": "_SpecularPower", "Type": "Float", "DefaultValue": 30, "Mode": "Slider", "Range": [1, 200] },
+    { "Name": "_SpecularIntensity", "Type": "Float", "DefaultValue": 0.8, "Mode": "Slider", "Range": [0, 2] },
+    { "Name": "_RimColor", "Type": "Color", "DefaultValue": [0.7, 0.8, 1, 1] },
+    { "Name": "_RimPower", "Type": "Float", "DefaultValue": 2.5, "Mode": "Slider", "Range": [0.1, 10] },
+    { "Name": "_RimIntensity", "Type": "Float", "DefaultValue": 0.6, "Mode": "Slider", "Range": [0, 2] },
+    { "Name": "_EnvMap", "Type": "Texture2D", "DefaultValue": "black" },
+    { "Name": "_EnvMapIntensity", "Type": "Float", "DefaultValue": 0.3, "Mode": "Slider", "Range": [0, 2] }
+  ],
+  "Nodes": [
+    { "Id": "UV0", "Type": "UVNode" },
+    { "Id": "SamplerState", "Type": "SamplerStateNode" },
+    { "Id": "MainTexProp", "Type": "PropertyNode", "PropertyName": "_MainTex" },
+    { "Id": "BaseColorProp", "Type": "PropertyNode", "PropertyName": "_BaseColor" },
+    { "Id": "ShadowColorProp", "Type": "PropertyNode", "PropertyName": "_ShadowColor" },
+    { "Id": "ShadowStepProp", "Type": "PropertyNode", "PropertyName": "_ShadowStep" },
+    { "Id": "ShadowSmoothnessProp", "Type": "PropertyNode", "PropertyName": "_ShadowSmoothness" },
+    { "Id": "NormalMapProp", "Type": "PropertyNode", "PropertyName": "_NormalMap" },
+    { "Id": "NormalStrengthProp", "Type": "PropertyNode", "PropertyName": "_NormalStrength" },
+    { "Id": "SpecularColorProp", "Type": "PropertyNode", "PropertyName": "_SpecularColor" },
+    { "Id": "SpecularPowerProp", "Type": "PropertyNode", "PropertyName": "_SpecularPower" },
+    { "Id": "SpecularIntensityProp", "Type": "PropertyNode", "PropertyName": "_SpecularIntensity" },
+    { "Id": "RimColorProp", "Type": "PropertyNode", "PropertyName": "_RimColor" },
+    { "Id": "RimPowerProp", "Type": "PropertyNode", "PropertyName": "_RimPower" },
+    { "Id": "RimIntensityProp", "Type": "PropertyNode", "PropertyName": "_RimIntensity" },
+    { "Id": "EnvMapProp", "Type": "PropertyNode", "PropertyName": "_EnvMap" },
+    { "Id": "EnvMapIntensityProp", "Type": "PropertyNode", "PropertyName": "_EnvMapIntensity" },
+    { "Id": "SampleMainTex", "Type": "SampleTexture2DNode" },
+    { "Id": "MultiplyBaseColor", "Type": "MultiplyNode" },
+    {
+      "Id": "SampleNormalMap",
+      "Type": "SampleTexture2DNode",
+      "Inputs": { "textureType": "Normal", "normalMapSpace": "Tangent" }
+    },
+    { "Id": "NormalStrength", "Type": "NormalStrengthNode" },
+    { "Id": "NormalWorldSpace", "Type": "TransformNode", "Inputs": { "from": "Tangent", "to": "World", "conversionType": "Normal" } },
+    { "Id": "WorldPos", "Type": "PositionNode", "Inputs": { "Space": "AbsoluteWorld" } },
+    { "Id": "WorldNormal", "Type": "NormalVectorNode", "Inputs": { "Space": "World" } },
+    { "Id": "ViewDir", "Type": "ViewDirectionNode", "Inputs": { "Space": "World" } },
+    { "Id": "MainLightDir", "Type": "MainLightDirectionNode" },
+    { "Id": "NdotL", "Type": "DotProductNode" },
+    { "Id": "HalfLambertMul", "Type": "MultiplyNode" },
+    { "Id": "HalfLambertAdd", "Type": "AddNode" },
+    { "Id": "ConstantHalf", "Type": "Vector1Node", "Inputs": { "X": 0.5 } },
+    { "Id": "SaturateHalfLambert", "Type": "SaturateNode" },
+    { "Id": "SmoothstepShadow", "Type": "SmoothstepNode" },
+    { "Id": "ShadowStepMin", "Type": "SubtractNode" },
+    { "Id": "ShadowStepMax", "Type": "AddNode" },
+    { "Id": "LerpDiffuseShadow", "Type": "LerpNode" },
+    { "Id": "HalfVec", "Type": "AddNode" },
+    { "Id": "NormalizeHalfVec", "Type": "NormalizeNode" },
+    { "Id": "NdotH", "Type": "DotProductNode" },
+    { "Id": "SaturateNdotH", "Type": "SaturateNode" },
+    { "Id": "SpecularPower", "Type": "PowerNode" },
+    { "Id": "MultiplySpecularIntensity", "Type": "MultiplyNode" },
+    { "Id": "MultiplySpecularColor", "Type": "MultiplyNode" },
+    { "Id": "FresnelDot", "Type": "DotProductNode" },
+    { "Id": "OneMinusFresnel", "Type": "OneMinusNode" },
+    { "Id": "SaturateFresnel", "Type": "SaturateNode" },
+    { "Id": "RimPower", "Type": "PowerNode" },
+    { "Id": "MultiplyRimIntensity", "Type": "MultiplyNode" },
+    { "Id": "MultiplyRimColor", "Type": "MultiplyNode" },
+    { "Id": "SampleEnvMap", "Type": "SampleTexture2DNode" },
+    { "Id": "MultiplyEnvMapIntensity", "Type": "MultiplyNode" },
+    {
+      "Id": "CustomLighting",
+      "Type": "CustomFunctionNode",
+      "Inputs": {
+        "sourceType": "File",
+        "functionName": "StylizedHairLighting",
+        "functionSource": "",
+        "functionBody": "#pragma multi_compile _ _MAIN_LIGHT_SHADOWS\n#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE\n#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS\n\n#if !defined(SHADERGRAPH_PREVIEW)\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n#endif\n\nvoid StylizedHairLighting_float(\n    float3 WorldPos,\n    float3 DiffuseLighting,\n    float3 Specular,\n    float3 Rim,\n    float3 Env,\n    out float3 OutColor)\n{\n    #if defined(SHADERGRAPH_PREVIEW)\n    OutColor = DiffuseLighting + Specular + Rim + Env;\n    #else\n    float4 shadowCoord = TransformWorldToShadowCoord(WorldPos);\n    Light mainLight = GetMainLight(shadowCoord);\n    float3 lightColor = mainLight.color;\n    float shadowAtten = mainLight.shadowAttenuation;\n\n    float3 diffuse = DiffuseLighting * lightColor * shadowAtten;\n    float3 specular = Specular * lightColor * shadowAtten;\n    float3 rim = Rim * lightColor;\n\n    OutColor = diffuse + specular + rim + Env;\n    #endif\n}",
+        "usePragmas": true
+      },
+      "Slots": [
+        { "DisplayName": "WorldPos", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "DiffuseLighting", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "Specular", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "Rim", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "Env", "ValueType": "Vector3", "IsInput": true, "DefaultValue": [0,0,0,0] },
+        { "DisplayName": "OutColor", "ValueType": "Vector3", "IsInput": false }
+      ]
+    }
+  ],
+  "Connections": [
+    { "From": "UV0", "FromSlot": "UVNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "MainTexProp", "FromSlot": "PropertyNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SampleMainTex", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+    { "From": "SampleMainTex", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "MultiplyBaseColor", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "BaseColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyBaseColor", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "UV0", "FromSlot": "UVNode.Output.Out", "To": "SampleNormalMap", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "NormalMapProp", "FromSlot": "PropertyNode.Output.Out", "To": "SampleNormalMap", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SampleNormalMap", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+    { "From": "SampleNormalMap", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "NormalStrength", "ToSlot": "NormalStrengthNode.Input.In" },
+    { "From": "NormalStrengthProp", "FromSlot": "PropertyNode.Output.Out", "To": "NormalStrength", "ToSlot": "NormalStrengthNode.Input.Strength" },
+    { "From": "NormalStrength", "FromSlot": "NormalStrengthNode.Output.Out", "To": "NormalWorldSpace", "ToSlot": "TransformNode.Input.In" },
+    { "From": "NormalWorldSpace", "FromSlot": "TransformNode.Output.Out", "To": "NdotL", "ToSlot": "DotProductNode.Input.A" },
+    { "From": "MainLightDir", "FromSlot": "MainLightDirectionNode.Output.Direction", "To": "NdotL", "ToSlot": "DotProductNode.Input.B" },
+    { "From": "NdotL", "FromSlot": "DotProductNode.Output.Out", "To": "HalfLambertMul", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "ConstantHalf", "FromSlot": "Vector1Node.Output.Out", "To": "HalfLambertMul", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "HalfLambertMul", "FromSlot": "MultiplyNode.Output.Out", "To": "HalfLambertAdd", "ToSlot": "AddNode.Input.A" },
+    { "From": "ConstantHalf", "FromSlot": "Vector1Node.Output.Out", "To": "HalfLambertAdd", "ToSlot": "AddNode.Input.B" },
+    { "From": "HalfLambertAdd", "FromSlot": "AddNode.Output.Out", "To": "SaturateHalfLambert", "ToSlot": "SaturateNode.Input.In" },
+    { "From": "SaturateHalfLambert", "FromSlot": "SaturateNode.Output.Out", "To": "SmoothstepShadow", "ToSlot": "SmoothstepNode.Input.In" },
+    { "From": "ShadowStepProp", "FromSlot": "PropertyNode.Output.Out", "To": "ShadowStepMin", "ToSlot": "SubtractNode.Input.A" },
+    { "From": "ShadowSmoothnessProp", "FromSlot": "PropertyNode.Output.Out", "To": "ShadowStepMin", "ToSlot": "SubtractNode.Input.B" },
+    { "From": "ShadowStepMin", "FromSlot": "SubtractNode.Output.Out", "To": "SmoothstepShadow", "ToSlot": "SmoothstepNode.Input.Edge1" },
+    { "From": "ShadowStepProp", "FromSlot": "PropertyNode.Output.Out", "To": "ShadowStepMax", "ToSlot": "AddNode.Input.A" },
+    { "From": "ShadowSmoothnessProp", "FromSlot": "PropertyNode.Output.Out", "To": "ShadowStepMax", "ToSlot": "AddNode.Input.B" },
+    { "From": "ShadowStepMax", "FromSlot": "AddNode.Output.Out", "To": "SmoothstepShadow", "ToSlot": "SmoothstepNode.Input.Edge2" },
+    { "From": "MultiplyBaseColor", "FromSlot": "MultiplyNode.Output.Out", "To": "LerpDiffuseShadow", "ToSlot": "LerpNode.Input.A" },
+    { "From": "ShadowColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "LerpDiffuseShadow", "ToSlot": "LerpNode.Input.B" },
+    { "From": "SmoothstepShadow", "FromSlot": "SmoothstepNode.Output.Out", "To": "LerpDiffuseShadow", "ToSlot": "LerpNode.Input.T" },
+    { "From": "ViewDir", "FromSlot": "ViewDirectionNode.Output.Out", "To": "HalfVec", "ToSlot": "AddNode.Input.A" },
+    { "From": "MainLightDir", "FromSlot": "MainLightDirectionNode.Output.Direction", "To": "HalfVec", "ToSlot": "AddNode.Input.B" },
+    { "From": "HalfVec", "FromSlot": "AddNode.Output.Out", "To": "NormalizeHalfVec", "ToSlot": "NormalizeNode.Input.In" },
+    { "From": "NormalWorldSpace", "FromSlot": "TransformNode.Output.Out", "To": "NdotH", "ToSlot": "DotProductNode.Input.A" },
+    { "From": "NormalizeHalfVec", "FromSlot": "NormalizeNode.Output.Out", "To": "NdotH", "ToSlot": "DotProductNode.Input.B" },
+    { "From": "NdotH", "FromSlot": "DotProductNode.Output.Out", "To": "SaturateNdotH", "ToSlot": "SaturateNode.Input.In" },
+    { "From": "SaturateNdotH", "FromSlot": "SaturateNode.Output.Out", "To": "SpecularPower", "ToSlot": "PowerNode.Input.A" },
+    { "From": "SpecularPowerProp", "FromSlot": "PropertyNode.Output.Out", "To": "SpecularPower", "ToSlot": "PowerNode.Input.B" },
+    { "From": "SpecularPower", "FromSlot": "PowerNode.Output.Out", "To": "MultiplySpecularIntensity", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "SpecularIntensityProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplySpecularIntensity", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "MultiplySpecularIntensity", "FromSlot": "MultiplyNode.Output.Out", "To": "MultiplySpecularColor", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "SpecularColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplySpecularColor", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "NormalWorldSpace", "FromSlot": "TransformNode.Output.Out", "To": "FresnelDot", "ToSlot": "DotProductNode.Input.A" },
+    { "From": "ViewDir", "FromSlot": "ViewDirectionNode.Output.Out", "To": "FresnelDot", "ToSlot": "DotProductNode.Input.B" },
+    { "From": "FresnelDot", "FromSlot": "DotProductNode.Output.Out", "To": "SaturateFresnel", "ToSlot": "SaturateNode.Input.In" },
+    { "From": "SaturateFresnel", "FromSlot": "SaturateNode.Output.Out", "To": "OneMinusFresnel", "ToSlot": "OneMinusNode.Input.In" },
+    { "From": "OneMinusFresnel", "FromSlot": "OneMinusNode.Output.Out", "To": "RimPower", "ToSlot": "PowerNode.Input.A" },
+    { "From": "RimPowerProp", "FromSlot": "PropertyNode.Output.Out", "To": "RimPower", "ToSlot": "PowerNode.Input.B" },
+    { "From": "RimPower", "FromSlot": "PowerNode.Output.Out", "To": "MultiplyRimIntensity", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "RimIntensityProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyRimIntensity", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "MultiplyRimIntensity", "FromSlot": "MultiplyNode.Output.Out", "To": "MultiplyRimColor", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "RimColorProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyRimColor", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "UV0", "FromSlot": "UVNode.Output.Out", "To": "SampleEnvMap", "ToSlot": "SampleTexture2DNode.Input.UV" },
+    { "From": "EnvMapProp", "FromSlot": "PropertyNode.Output.Out", "To": "SampleEnvMap", "ToSlot": "SampleTexture2DNode.Input.Texture" },
+    { "From": "SamplerState", "FromSlot": "SamplerStateNode.Output.Out", "To": "SampleEnvMap", "ToSlot": "SampleTexture2DNode.Input.Sampler" },
+    { "From": "SampleEnvMap", "FromSlot": "SampleTexture2DNode.Output.RGBA", "To": "MultiplyEnvMapIntensity", "ToSlot": "MultiplyNode.Input.A" },
+    { "From": "EnvMapIntensityProp", "FromSlot": "PropertyNode.Output.Out", "To": "MultiplyEnvMapIntensity", "ToSlot": "MultiplyNode.Input.B" },
+    { "From": "WorldPos", "FromSlot": "PositionNode.Output.Out", "To": "CustomLighting", "ToSlot": "CustomFunctionNode.Input.WorldPos" },
+    { "From": "LerpDiffuseShadow", "FromSlot": "LerpNode.Output.Out", "To": "CustomLighting", "ToSlot": "CustomFunctionNode.Input.DiffuseLighting" },
+    { "From": "MultiplySpecularColor", "FromSlot": "MultiplyNode.Output.Out", "To": "CustomLighting", "ToSlot": "CustomFunctionNode.Input.Specular" },
+    { "From": "MultiplyRimColor", "FromSlot": "MultiplyNode.Output.Out", "To": "CustomLighting", "ToSlot": "CustomFunctionNode.Input.Rim" },
+    { "From": "MultiplyEnvMapIntensity", "FromSlot": "MultiplyNode.Output.Out", "To": "CustomLighting", "ToSlot": "CustomFunctionNode.Input.Env" }
+  ],
+  "Blocks": [
+    { "Context": "Fragment", "Type": "BaseColor", "SourceNode": "CustomLighting", "SourceSlot": "CustomFunctionNode.Output.OutColor" }
+  ]
+}
+关键节点用法提示
+节点组合	作用	关键参数
+Saturate + Smoothstep + Lerp	实现可控的卡通色阶阴影	_ShadowStep（阈值）、_ShadowSmoothness（过渡平滑度）
+TransformNode (Tangent → World, Normal)	将切线空间法线转换到世界空间	需配合 SampleTexture2DNode 的 Normal 类型自动解包法线
+PowerNode + MultiplyNode	控制高光和边缘光的衰减曲线	_SpecularPower / _RimPower 调节范围，_Intensity 调节强度
+CustomFunctionNode (含阴影宏)	集成 URP 主光源阴影衰减	必须包含 #pragma multi_compile 和 #include "Lighting.hlsl" 且放在 #if !defined(SHADERGRAPH_PREVIEW) 内
+适用场景
+风格化角色渲染（头发、服装、皮肤）
+
+需要双面渲染的薄片模型（Render Face = Both）
+
+完全可控的卡通光照，无外部控制纹理依赖
+
+此示例可作为构建自定义卡通着色器的起点，所有节点连接均严格遵循本知识库的槽位定义。
+
+text
+
+---
+
+您可以将上述内容直接追加到您的 `节点知识库.txt` 文件末尾。未来在使用时，即可通过该章节快速调用完整的卡通头发着色器 JSON 模板。
