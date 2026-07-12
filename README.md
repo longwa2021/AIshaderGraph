@@ -93,7 +93,7 @@
 
 ### 架构安全性
 
-MCP 集成通过**独立程序集**（`com.longwa.aishadergraph.Editor.MCP.asmdef`）实现。若项目未安装 `com.unity.ai.assistant`，MCP 程序集编译失败 → Unity 自动跳过 → 主包功能完全不受影响，**对旧版本向后兼容**。
+`com.unity.ai.assistant@2.5.0-pre.2` 已在 `package.json` 中声明为依赖。Unity Package Manager 自动解析安装 → `Unity.AI.MCP.Editor` 程序集始终可用 → `McpBridge.cs` 正常引用 `[McpTool]` / `[McpDescription]` 编译注册。
 
 ---
 
@@ -208,9 +208,7 @@ AIshaderGraph/
 │   ├── 知识库/
 │   │   ├── 节点知识库.txt                       # 完整节点参考（供手动使用）
 │   │   └── knowledge_summary.json              # 结构化节点清单（供 MCP 工具读取）
-│   ├── McpExtras/
-│   │   ├── com.longwa.aishadergraph.Editor.MCP.asmdef  # 可选 MCP 程序集
-│   │   └── McpBridge.cs                                 # MCP 工具注册（2 个工具）
+│   ├── McpBridge.cs                             # MCP 工具注册（aishader_build_json + aishader_get_knowledge）
 │   ├── 节点帮助器/节点/
 │   │   ├── AIShaderGraphGeneratorWindow.cs  # 主窗口
 │   │   ├── ColorNodeParams.cs               # 节点参数类

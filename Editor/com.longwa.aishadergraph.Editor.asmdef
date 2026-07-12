@@ -4,7 +4,8 @@
     "references": [
         "Unity.ShaderGraph.Editor",
         "Unity.RenderPipelines.Universal.Editor",
-        "Unity.EditorCoroutines.Editor"
+        "Unity.EditorCoroutines.Editor",
+        "Unity.AI.MCP.Editor"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
