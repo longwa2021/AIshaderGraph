@@ -51,32 +51,29 @@ namespace 龙哥的秘密花园.AIshaderGraph
 
     public static class AiShaderGetKnowledgeTool
     {
-        private static string _cachedSummary;
-        private static JObject _cachedJson;
-
         [McpTool("aishader_get_knowledge", "Get ShaderGraph format reference, available node types with slots and parameters")]
         public static object Execute(GetKnowledgeParams p)
         {
-            if (_cachedSummary == null)
-            {
-                string packageRoot = GetPackageRoot();
-                string summaryPath = Path.Combine(packageRoot, "Editor", "知识库", "knowledge_summary.json");
-                if (File.Exists(summaryPath))
-                    _cachedSummary = File.ReadAllText(summaryPath);
-                else
-                    return new { error = "knowledge_summary.json not found at " + summaryPath };
-            }
+            string packageRoot = GetPackageRoot();
+            string summaryPath = Path.Combine(packageRoot, "Editor", "知识库", "knowledge_summary.json");
+            if (!File.Exists(summaryPath))
+                return new { error = "knowledge_summary.json not found at " + summaryPath };
 
-            if (_cachedJson == null)
-                _cachedJson = JObject.Parse(_cachedSummary);
+            string raw;
+            try { raw = File.ReadAllText(summaryPath); }
+            catch (Exception ex) { return new { error = "Read error: " + ex.GetType().Name }; }
+
+            JObject json;
+            try { json = JObject.Parse(raw); }
+            catch (Exception ex) { return new { error = "Parse error: " + ex.Message + " at " + summaryPath }; }
 
             string category = p.Category ?? "all";
 
             if (category == "format")
-                return new { format = _cachedJson["format"], pipeline_targets = _cachedJson["pipeline_targets"], fragment_blocks = _cachedJson["fragment_blocks"] };
+                return new { format = json["format"], pipeline_targets = json["pipeline_targets"], fragment_blocks = json["fragment_blocks"] };
 
             if (category == "nodes")
-                return new { nodes = _cachedJson["nodes"] };
+                return new { nodes = json["nodes"] };
 
             if (category == "node")
             {
@@ -84,7 +81,7 @@ namespace 龙哥的秘密花园.AIshaderGraph
                 if (string.IsNullOrEmpty(nodeType))
                     return new { error = "NodeType required for category=node" };
 
-                foreach (var n in _cachedJson["nodes"])
+                foreach (var n in json["nodes"])
                     if (n["t"]?.ToString() == nodeType)
                         return new { node = n };
 
@@ -95,7 +92,7 @@ namespace 龙哥的秘密花园.AIshaderGraph
             {
                 string keyword = p.Keyword?.ToLower() ?? "";
                 var matches = new JArray();
-                foreach (var n in _cachedJson["nodes"])
+                foreach (var n in json["nodes"])
                 {
                     string desc = (n["t"]?.ToString() + " " + n["c"]?.ToString()).ToLower();
                     if (string.IsNullOrEmpty(keyword) || desc.Contains(keyword))
@@ -106,10 +103,10 @@ namespace 龙哥的秘密花园.AIshaderGraph
 
             return new
             {
-                format = _cachedJson["format"],
-                pipeline_targets = _cachedJson["pipeline_targets"],
-                fragment_blocks = _cachedJson["fragment_blocks"],
-                node_count = (_cachedJson["nodes"] as JArray)?.Count ?? 0,
+                format = json["format"],
+                pipeline_targets = json["pipeline_targets"],
+                fragment_blocks = json["fragment_blocks"],
+                node_count = (json["nodes"] as JArray)?.Count ?? 0,
                 hint = "Use category=format for schema, category=nodes for all nodes, category=node&nodeType=X for specific, category=search&keyword=X to find nodes"
             };
         }
