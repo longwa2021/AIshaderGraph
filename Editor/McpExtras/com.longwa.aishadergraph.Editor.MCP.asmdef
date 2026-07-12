@@ -1,0 +1,17 @@
+{
+    "name": "com.longwa.aishadergraph.Editor.MCP",
+    "rootNamespace": "龙哥的秘密花园.AIshaderGraph",
+    "references": [
+        "com.longwa.aishadergraph.Editor",
+        "Unity.AI.MCP.Editor"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

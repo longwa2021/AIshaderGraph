@@ -1,8 +1,8 @@
 {
   "name": "com.longwa.aishadergraph",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "displayName": "AI Shader Graph",
-  "description": "AI 驱动的 Shader Graph 自动生成工具 - 解析 AI 返回的 JSON 自动构建 Unity ShaderGraph 资产",
+  "description": "AI 驱动的 Shader Graph 自动生成工具 - 支持 Unity MCP 直接工具调用和 RunCommand 脚本双轨模式",
   "unity": "6000.0",
   "documentationUrl": "https://github.com/longwa2021/AIshaderGraph",
   
