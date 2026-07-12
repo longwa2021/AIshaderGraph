@@ -5,7 +5,8 @@
         "Unity.ShaderGraph.Editor",
         "Unity.RenderPipelines.Universal.Editor",
         "Unity.EditorCoroutines.Editor",
-        "Unity.AI.MCP.Editor"
+        "Unity.AI.MCP.Editor",
+        "UnityEditor.PackageManagerModule"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
