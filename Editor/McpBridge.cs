@@ -116,16 +116,14 @@ namespace 龙哥的秘密花园.AIshaderGraph
 
         private static string GetPackageRoot()
         {
-            string[] guids = AssetDatabase.FindAssets("知识库 t:TextAsset");
-            foreach (string guid in guids)
+            // 从当前程序集 DLL 路径向上查找 package.json（兼容 Assets/ 和 PackageCache）
+            string asmPath = typeof(AiShaderGetKnowledgeTool).Assembly.Location;
+            string dir = Path.GetDirectoryName(asmPath);
+            while (!string.IsNullOrEmpty(dir))
             {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (path.Contains("AIshaderGraph"))
-                {
-                    string fullPath = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(path)));
-                    if (Directory.Exists(Path.Combine(fullPath, "Editor")))
-                        return fullPath;
-                }
+                if (File.Exists(Path.Combine(dir, "package.json")))
+                    return dir;
+                dir = Path.GetDirectoryName(dir);
             }
             return Path.Combine(Application.dataPath, "AIshaderGraph");
         }
