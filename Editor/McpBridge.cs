@@ -48,6 +48,7 @@ namespace 龙哥的秘密花园.AIshaderGraph
         [McpTool("aishader_get_knowledge", "Get ShaderGraph format reference, available node types with slots and parameters")]
         public static object Execute(GetKnowledgeParams p)
         {
+<<<<<<< HEAD
             try
             {
                 string root = GetPackageRoot();
@@ -67,6 +68,63 @@ namespace 龙哥的秘密花园.AIshaderGraph
                 return new { hint = "Use category=format|nodes", node_count = (json["nodes"] as JArray)?.Count ?? 0 };
             }
             catch (Exception ex) { return new { error = ex.GetType().Name + ": " + ex.Message }; }
+=======
+            string packageRoot = GetPackageRoot();
+            string summaryPath = Path.Combine(packageRoot, "Editor", "知识库", "knowledge_summary.json");
+            if (!File.Exists(summaryPath))
+                return new { error = "knowledge_summary.json not found at " + summaryPath };
+
+            string raw;
+            try { raw = File.ReadAllText(summaryPath); }
+            catch (Exception ex) { return new { error = "Read error: " + ex.GetType().Name }; }
+
+            JObject json;
+            try { json = JObject.Parse(raw); }
+            catch (Exception ex) { return new { error = "Parse error: " + ex.Message + " at " + summaryPath }; }
+
+            string category = p.Category ?? "all";
+
+            if (category == "format")
+                return new { format = json["format"], pipeline_targets = json["pipeline_targets"], fragment_blocks = json["fragment_blocks"] };
+
+            if (category == "nodes")
+                return new { nodes = json["nodes"] };
+
+            if (category == "node")
+            {
+                string nodeType = p.NodeType;
+                if (string.IsNullOrEmpty(nodeType))
+                    return new { error = "NodeType required for category=node" };
+
+                foreach (var n in json["nodes"])
+                    if (n["t"]?.ToString() == nodeType)
+                        return new { node = n };
+
+                return new { error = $"Node type '{nodeType}' not found" };
+            }
+
+            if (category == "search")
+            {
+                string keyword = p.Keyword?.ToLower() ?? "";
+                var matches = new JArray();
+                foreach (var n in json["nodes"])
+                {
+                    string desc = (n["t"]?.ToString() + " " + n["c"]?.ToString()).ToLower();
+                    if (string.IsNullOrEmpty(keyword) || desc.Contains(keyword))
+                        matches.Add(n);
+                }
+                return new { count = matches.Count, nodes = matches };
+            }
+
+            return new
+            {
+                format = json["format"],
+                pipeline_targets = json["pipeline_targets"],
+                fragment_blocks = json["fragment_blocks"],
+                node_count = (json["nodes"] as JArray)?.Count ?? 0,
+                hint = "Use category=format for schema, category=nodes for all nodes, category=node&nodeType=X for specific, category=search&keyword=X to find nodes"
+            };
+>>>>>>> 546954e9bed8e52f4c26f3373333aa5592a5d299
         }
 
         private static string GetPackageRoot()
