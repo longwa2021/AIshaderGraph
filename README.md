@@ -34,6 +34,14 @@
 
 > 注意：不安装 AI Assistant 不影响 ShaderGraph 生成器和 RunCommand 功能。
 
+### 卸载 MCP 集成
+
+如果不需要 MCP 功能，按以下步骤移除（避免编译错误）：
+
+1. 删除 `Editor/McpBridge.cs` 和 `Editor/McpBridge.cs.meta`
+2. 打开 `Editor/com.longwa.aishadergraph.Editor.asmdef`，删除 `"Unity.AI.MCP.Editor"` 引用
+3. 打开 `package.json`，删除 `"com.unity.ai.assistant": "2.5.0-pre.2"` 依赖即可
+
 ### MCP 工具
 
 | 工具名 | 参数 | 说明 |
