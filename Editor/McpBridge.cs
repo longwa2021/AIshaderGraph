@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Unity.AI.MCP.Editor.ToolRegistry;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.PackageManager;
 using 龙哥的秘密花园.节点库;
 using SGB = 龙哥的秘密花园.ShaderGraphBuilder.ShaderGraphBuilder;
 
@@ -116,15 +117,10 @@ namespace 龙哥的秘密花园.AIshaderGraph
 
         private static string GetPackageRoot()
         {
-            // 从当前程序集 DLL 路径向上查找 package.json（兼容 Assets/ 和 PackageCache）
-            string asmPath = typeof(AiShaderGetKnowledgeTool).Assembly.Location;
-            string dir = Path.GetDirectoryName(asmPath);
-            while (!string.IsNullOrEmpty(dir))
-            {
-                if (File.Exists(Path.Combine(dir, "package.json")))
-                    return dir;
-                dir = Path.GetDirectoryName(dir);
-            }
+            var pkgInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
+                typeof(AiShaderGetKnowledgeTool).Assembly);
+            if (pkgInfo != null && !string.IsNullOrEmpty(pkgInfo.resolvedPath))
+                return pkgInfo.resolvedPath;
             return Path.Combine(Application.dataPath, "AIshaderGraph");
         }
     }
