@@ -29,10 +29,10 @@
 
 | 依赖 | 说明 |
 |------|------|
-| `com.unity.ai.assistant`（2.5.0-pre.2+） | 提供 Unity MCP Bridge |
+| `com.unity.ai.assistant`（**仅 2.5.0-pre.2**） | 提供 Unity MCP Bridge。后续版本（2.5.0-pre.2 以上）**需要 Unity AI 许可证才允许 MCP 连接**，因此本包锁定此版本 |
 | MCP 客户端（OpenCode / Cursor / Claude Code） | 连接 Unity，调用 MCP 工具 |
 
-> 注意：不安装 AI Assistant 不影响 ShaderGraph 生成器和 RunCommand 功能。MCP 集成通过可选程序集（`.asmdef`）实现，仅在检测到 `Unity.AI.MCP.Editor` 时自动编译。
+> 注意：不安装 AI Assistant 不影响 ShaderGraph 生成器和 RunCommand 功能。
 
 ### MCP 工具
 
