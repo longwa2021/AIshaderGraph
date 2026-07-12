@@ -287,6 +287,29 @@ Unity 菜单 → **Tools > 龙哥的秘密花园 > 子图端口解析器**
 
 ---
 
+## 已知问题
+
+### 安装后触发 `CS0103: 'Unsafe' does not exist` 编译错误
+
+**现象**：安装本包（或 `com.unity.ai.assistant`）后报错：
+
+```
+Library\PackageCache\com.unity.collections@<hash>\Unity.Collections\xxHash3.cs(650,61): error CS0103: The name 'Unsafe' does not exist in the current context
+```
+
+**原因**：`com.unity.entities@1.4.x` → `com.unity.collections@2.6.7` + Unity 6000 → Burst API 不兼容。安装新包触发全量重编译暴露此问题。清除编译缓存无法解决，每次重编都会触发。
+
+**解决方案**（任选其一）：
+
+| 方案 | 操作 |
+|------|------|
+| **A** | 移除 `com.unity.entities` 系列包 → `com.unity.collections` 可自由降级到 `2.5.1` |
+| **B** | 移除本包和 `com.unity.ai.assistant` → 不触发全量重编 → 错误不暴露 |
+
+> 两个包族（ECS + AI Assistant）同时存在时冲突，选择移除其中一个即可。
+
+---
+
 ## 许可证
 
 MIT
