@@ -70,13 +70,13 @@ namespace 龙哥的秘密花园.AIshaderGraph
             catch (Exception ex) { return new { error = ex.GetType().Name + ": " + ex.Message }; }
         }
 
+       
         private static string GetPackageRoot()
         {
-            var info = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
-                typeof(AiShaderGetKnowledgeTool).Assembly);
-            if (info != null && !string.IsNullOrEmpty(info.resolvedPath))
-                return info.resolvedPath;
-            return Path.Combine(Application.dataPath, "AIshaderGraph");
+            // 1. Git 安装 → Packages/ 虚拟路径（Path.GetFullPath 解析到物理路径）
+            string packagesPath = Path.GetFullPath("Packages/com.longwa.aishadergraph");
+            Debug.Log(packagesPath);
+            return packagesPath;
         }
     }
 
