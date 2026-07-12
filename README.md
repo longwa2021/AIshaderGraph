@@ -17,6 +17,83 @@
 - **自动布局** — 拓扑排序 + 最长路径算法，节点自动排列，数据流从左到右
 - **可视化窗口** — AI ShaderGraph 生成器 + 子图端口解析器，双击即用
 - **渲染状态精细控制** — 表面类型、混合模式、深度测试、面剔除、Alpha Clip 等
+- **Unity MCP 集成** — 通过 `aishader_build_json` 和 `aishader_get_knowledge` 两个 MCP 工具直接对接 AI 客户端，无需手动粘贴 JSON
+
+---
+
+## Unity MCP 集成（v1.1.0 新增）
+
+将本工具注册为 Unity MCP 工具，AI 可以直接调用 `aishader_build_json` 和 `aishader_get_knowledge`，**无需手动复制知识库或粘贴 JSON**。
+
+### 前提条件
+
+| 依赖 | 说明 |
+|------|------|
+| `com.unity.ai.assistant`（2.5.0-pre.2+） | 提供 Unity MCP Bridge |
+| MCP 客户端（OpenCode / Cursor / Claude Code） | 连接 Unity，调用 MCP 工具 |
+
+> 注意：不安装 AI Assistant 不影响 ShaderGraph 生成器和 RunCommand 功能。MCP 集成通过可选程序集（`.asmdef`）实现，仅在检测到 `Unity.AI.MCP.Editor` 时自动编译。
+
+### MCP 工具
+
+| 工具名 | 参数 | 说明 |
+|--------|------|------|
+| `aishader_build_json` | `assetPath`（资产路径）, `json`（JSON 描述） | 从 JSON 一键创建 ShaderGraph 资产 |
+| `aishader_get_knowledge` | `category`（`format`/`nodes`/`search`/`node`）, `keyword`, `nodeType` | 按需查询节点类型、槽位、参数、JSON Schema |
+
+### 知识库查询模式
+
+| `category` 值 | 额外参数 | 返回内容 |
+|--------------|---------|---------|
+| `format` | — | JSON Schema + Pipeline/Target/Block 参考 |
+| `nodes` | — | 全部 ~200 个节点类型 + 槽位 + 参数 |
+| `search` | `keyword=noise` | 按关键词匹配的节点子集 |
+| `node` | `nodeType=SimpleNoiseNode` | 单个节点的详细信息 |
+
+### 连接 OpenCode
+
+在项目根目录创建 `opencode.json`：
+
+```json
+{
+  "mcp": {
+    "unity-mcp": {
+      "type": "local",
+      "command": ["%USERPROFILE%\\.unity\\relay\\relay_win.exe", "--mcp"],
+      "enabled": true,
+      "timeout": 30000
+    }
+  },
+  "instructions": [
+    "创建 ShaderGraph 时优先调用 aishader_get_knowledge(category='format') 获取 Schema，然后调用 aishader_get_knowledge(category='search', keyword='...') 查找相关节点。组装 JSON 后调用 aishader_build_json 构建图。复杂场景（如 CustomFunctionNode）可用 RunCommand 作为 fallback。"
+  ]
+}
+```
+
+### AI 工作流
+
+```
+用户："创建一个体积云着色器"
+  → AI 调用 aishader_get_knowledge(category="search", keyword="noise")
+  → AI 获取噪声节点列表，选择 SimpleNoiseNode + SmoothstepNode
+  → AI 调用 aishader_get_knowledge(category="format")
+  → AI 获取 Schema 格式参考
+  → AI 组装 JSON（Pipeline + Blackboard + Nodes + Connections + Blocks）
+  → AI 调用 aishader_build_json(assetPath="Assets/Shaders/Clouds.shadergraph", json="{...}")
+  → ShaderGraph 创建完成，Unity 自动刷新
+```
+
+### 双轨架构
+
+| 轨道 | 方式 | 适用场景 |
+|------|------|---------|
+| **A** | `aishader_build_json`（MCP 直接调 API） | 标准图构建，无需编译 |
+| **B** | `RunCommand`（编译 + 执行 C# 脚本） | 复杂自定义逻辑、CustomFunctionNode |
+| **C** | AI ShaderGraph 生成器窗口（手动粘贴 JSON） | 不是 MCP 客户端时的备选方案 |
+
+### 架构安全性
+
+MCP 集成通过**独立程序集**（`com.longwa.aishadergraph.Editor.MCP.asmdef`）实现。若项目未安装 `com.unity.ai.assistant`，MCP 程序集编译失败 → Unity 自动跳过 → 主包功能完全不受影响，**对旧版本向后兼容**。
 
 ---
 
@@ -48,7 +125,16 @@ https://github.com/1ongwa2021/AIshaderGraph.git
 
 ## 快速开始
 
-### 1. 打开生成器
+### 方式一：Unity MCP（推荐，v1.1.0+ 需要 com.unity.ai.assistant）
+
+1. 确保项目已安装 `com.unity.ai.assistant@2.5.0-pre.2`，Unity MCP Bridge 运行中（绿色）
+2. 配置 MCP 客户端（如 OpenCode），连接 Unity MCP 继电器
+3. 直接对 AI 说："创建一个 PBR 着色器存到 Assets/PBR.shadergraph"
+4. AI 自动调用 `aishader_get_knowledge` 查询节点 → 组装 JSON → 调用 `aishader_build_json` → 完成
+
+### 方式二：手动窗口（传统方法）
+
+#### 1. 打开生成器
 Tools > 龙哥的秘密花园 > AI ShaderGraph 生成器
 ![开始界面](快速开始/开始界面.png)
 
@@ -117,8 +203,14 @@ Tools > 龙哥的秘密花园 > AI ShaderGraph 生成器
 AIshaderGraph/
 ├── package.json              # UPM 包清单
 ├── README.md                 # 本文档
-├── AI助手/                   # 核心功能目录
-│   ├── DeepSeekChat.asmdef   # Editor 程序集定义
+├── Editor/
+│   ├── com.longwa.aishadergraph.Editor.asmdef   # Editor 程序集
+│   ├── 知识库/
+│   │   ├── 节点知识库.txt                       # 完整节点参考（供手动使用）
+│   │   └── knowledge_summary.json              # 结构化节点清单（供 MCP 工具读取）
+│   ├── McpExtras/
+│   │   ├── com.longwa.aishadergraph.Editor.MCP.asmdef  # 可选 MCP 程序集
+│   │   └── McpBridge.cs                                 # MCP 工具注册（2 个工具）
 │   ├── 节点帮助器/节点/
 │   │   ├── AIShaderGraphGeneratorWindow.cs  # 主窗口
 │   │   ├── ColorNodeParams.cs               # 节点参数类
@@ -144,7 +236,7 @@ AIshaderGraph/
 │   │               ├── SubGraphJsonExporter.cs  # JSON 导出器
 │   │               └── SubGraphDataTypes.cs     # 数据结构类型
 │   └── CreateUnlitShaderGraphPureReflection.cs # 测试与示例
-└── 测试位置/                   # Shader 测试资产
+└── Tests/                     # 测试目录
 ```
 
 ---
